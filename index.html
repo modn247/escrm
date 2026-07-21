@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>로그인 — 스카이라이프 영업점 CRM</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Malgun Gothic','맑은 고딕',sans-serif;
+  min-height:100vh;
+  background:#eef0f4;
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;
+}
+.card{
+  background:#fff;
+  border-radius:12px;
+  box-shadow:0 8px 32px rgba(13,43,107,.10);
+  width:100%;max-width:380px;
+  padding:36px 32px 32px;
+}
+.brand{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px}
+.brand .badge{background:#e8382c;color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:.04em}
+.brand .name{font-size:15px;font-weight:700;color:#0d2b6b}
+.subtitle{text-align:center;font-size:12px;color:#6b7280;margin-bottom:28px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:11px;font-weight:700;color:#6b7280;margin-bottom:5px;letter-spacing:.02em;text-transform:uppercase}
+.field input{
+  width:100%;padding:11px 12px;font-size:14px;
+  border:1px solid #cdd2df;border-radius:6px;
+  outline:none;transition:border-color .15s,box-shadow .15s;
+  background:#fff;color:#1a1a2e;
+}
+.field input:focus{border-color:#0d2b6b;box-shadow:0 0 0 3px rgba(13,43,107,.10)}
+.btn-primary{
+  width:100%;padding:12px;margin-top:6px;
+  background:#0d2b6b;color:#fff;border:none;border-radius:6px;
+  font-size:14px;font-weight:700;cursor:pointer;
+  transition:background .15s;
+}
+.btn-primary:hover{background:#0a2257}
+.btn-primary:disabled{background:#9ca3af;cursor:not-allowed}
+.error-box{
+  background:#fee2e2;color:#991b1b;font-size:12px;
+  padding:10px 12px;border-radius:6px;margin-bottom:16px;
+  display:none;align-items:center;gap:6px;
+}
+.error-box.show{display:flex}
+.hint{text-align:center;font-size:11px;color:#9ca3af;margin-top:18px;line-height:1.6}
+.footer{text-align:center;font-size:10px;color:#c1c5d0;margin-top:24px}
+
+/* 비밀번호 변경 화면 */
+.pw-notice{
+  background:#fef3c7;color:#92400e;font-size:12px;
+  padding:10px 12px;border-radius:6px;margin-bottom:20px;
+  display:flex;align-items:flex-start;gap:6px;line-height:1.5;
+}
+.hidden{display:none !important}
+
+/* 로딩 스피너 */
+.spinner{
+  width:14px;height:14px;border:2px solid rgba(255,255,255,.4);
+  border-top-color:#fff;border-radius:50%;
+  display:inline-block;vertical-align:-2px;margin-right:6px;
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="brand">
+    <span class="badge">SKYLIFE</span>
+    <span class="name">영업점 CRM</span>
+  </div>
+  <p class="subtitle">이에스통신 접수 관리 시스템</p>
+
+  <!-- 로그인 폼 -->
+  <div id="login-view">
+    <div class="error-box" id="login-error"><span>⚠</span><span id="login-error-msg"></span></div>
+    <div class="field">
+      <label>아이디</label>
+      <input type="text" id="username" placeholder="아이디 입력" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>비밀번호</label>
+      <input type="password" id="password" placeholder="비밀번호 입력" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" id="login-btn" onclick="handleLogin()">로그인</button>
+    <p class="hint">계정이 없으신가요? <a href="signup.html" style="color:#0d2b6b;font-weight:600;text-decoration:underline">회원가입 신청</a></p>
+  </div>
+
+  <!-- 최초 로그인 비밀번호 변경 화면 -->
+  <div id="pwchange-view" class="hidden">
+    <div class="pw-notice">
+      <span>🔒</span>
+      <span>최초 로그인입니다. 계속 사용하시려면 비밀번호를 변경해주세요.</span>
+    </div>
+    <div class="error-box" id="pw-error"><span>⚠</span><span id="pw-error-msg"></span></div>
+    <div class="field">
+      <label>새 비밀번호</label>
+      <input type="password" id="new-password" placeholder="8자 이상 입력" autocomplete="new-password">
+    </div>
+    <div class="field">
+      <label>새 비밀번호 확인</label>
+      <input type="password" id="new-password-confirm" placeholder="다시 입력" autocomplete="new-password">
+    </div>
+    <button class="btn-primary" id="pwchange-btn" onclick="handlePasswordChange()">비밀번호 변경하고 시작하기</button>
+  </div>
+
+  <!-- 로그인 성공 -->
+  <div id="success-view" class="hidden" style="text-align:center;padding:20px 0">
+    <p style="font-size:15px;font-weight:700;color:#0d2b6b;margin-bottom:6px" id="success-name"></p>
+    <p style="font-size:12px;color:#6b7280;margin-bottom:20px" id="success-role"></p>
+    <button class="btn-primary" onclick="location.href='crm.html'">CRM 메인 화면으로</button>
+    <button class="btn-primary hidden" id="goto-approve-btn" onclick="location.href='approve.html'" style="margin-top:8px;background:#374151">가입 승인 관리로 이동</button>
+    <button class="btn-link" onclick="handleLogoutFromSuccess()" style="margin-top:14px">로그아웃</button>
+  </div>
+
+  <div class="footer">© 이에스통신 · 내부 업무용 시스템</div>
+</div>
+
+<script>
+// ── Supabase 클라이언트 초기화 ──
+const SUPABASE_URL = 'https://znmfpvyhnmenbvfxzbip.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_jAPWVI1eqLBAruHKsOIcmg_FvtF6Kc5';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const INTERNAL_DOMAIN = '@escrm-internal.com';
+
+function showView(id){
+  ['login-view','pwchange-view','success-view'].forEach(v=>{
+    document.getElementById(v).classList.toggle('hidden', v!==id);
+  });
+}
+function showError(boxId, msgId, msg){
+  document.getElementById(msgId).textContent = msg;
+  document.getElementById(boxId).classList.add('show');
+}
+function hideError(boxId){
+  document.getElementById(boxId).classList.remove('show');
+}
+function setBtnLoading(btn, loading, label){
+  btn.disabled = loading;
+  btn.innerHTML = loading ? '<span class="spinner"></span>처리 중...' : label;
+}
+
+let currentUserRow = null; // public.users 테이블의 내 정보 캐시
+
+async function handleLogin(){
+  hideError('login-error');
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+
+  if(!username || !password){
+    showError('login-error','login-error-msg','아이디와 비밀번호를 입력해주세요.');
+    return;
+  }
+
+  const btn = document.getElementById('login-btn');
+  setBtnLoading(btn, true, '로그인');
+
+  const email = username + INTERNAL_DOMAIN;
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+  if(error){
+    setBtnLoading(btn, false, '로그인');
+    showError('login-error','login-error-msg','아이디 또는 비밀번호가 올바르지 않습니다.');
+    return;
+  }
+
+  // public.users에서 내 role/status/must_change_password 조회
+  const { data: userRow, error: userErr } = await sb
+    .from('users')
+    .select('name, role, status, branch_id, must_change_password')
+    .eq('id', data.user.id)
+    .single();
+
+  setBtnLoading(btn, false, '로그인');
+
+  if(userErr || !userRow){
+    showError('login-error','login-error-msg','계정 정보를 불러오지 못했습니다. 관리자에게 문의해주세요.');
+    await sb.auth.signOut();
+    return;
+  }
+
+  if(userRow.status === 'pending'){
+    showError('login-error','login-error-msg','아직 승인 대기 중인 계정입니다. 승인 완료 후 이용해주세요.');
+    await sb.auth.signOut();
+    return;
+  }
+  if(userRow.status === 'rejected'){
+    showError('login-error','login-error-msg','가입 신청이 거절된 계정입니다. 관리자에게 문의해주세요.');
+    await sb.auth.signOut();
+    return;
+  }
+
+  currentUserRow = userRow;
+
+  // 마지막 로그인 시각 기록 (실패해도 로그인 자체는 진행)
+  sb.from('users').update({ last_login_at: new Date().toISOString() }).eq('id', data.user.id);
+
+  if(userRow.must_change_password){
+    showView('pwchange-view');
+  } else {
+    showSuccessView(userRow);
+  }
+}
+
+function roleLabel(role){
+  if(role==='admin') return '관리자';
+  if(role==='staff') return '내부직원';
+  if(role==='branch') return '영업점';
+  return role;
+}
+
+async function handleLogoutFromSuccess(){
+  await sb.auth.signOut();
+  currentUserRow = null;
+  document.getElementById('username').value = '';
+  document.getElementById('password').value = '';
+  showView('login-view');
+}
+
+function showSuccessView(userRow, suffix){
+  document.getElementById('success-name').textContent = userRow.name + ' 님';
+  document.getElementById('success-role').textContent = roleLabel(userRow.role) + (suffix || '');
+  document.getElementById('goto-approve-btn').classList.toggle('hidden', !['admin','staff'].includes(userRow.role));
+  showView('success-view');
+}
+
+async function handlePasswordChange(){
+  hideError('pw-error');
+  const pw1 = document.getElementById('new-password').value;
+  const pw2 = document.getElementById('new-password-confirm').value;
+
+  if(pw1.length < 8){
+    showError('pw-error','pw-error-msg','비밀번호는 8자 이상이어야 합니다.');
+    return;
+  }
+  if(pw1 !== pw2){
+    showError('pw-error','pw-error-msg','비밀번호가 서로 일치하지 않습니다.');
+    return;
+  }
+
+  const btn = document.getElementById('pwchange-btn');
+  setBtnLoading(btn, true, '비밀번호 변경하고 시작하기');
+
+  const { error: updateAuthErr } = await sb.auth.updateUser({ password: pw1 });
+  if(updateAuthErr){
+    setBtnLoading(btn, false, '비밀번호 변경하고 시작하기');
+    showError('pw-error','pw-error-msg','비밀번호 변경에 실패했습니다: '+updateAuthErr.message);
+    return;
+  }
+
+  const { error: updateFlagErr } = await sb
+    .from('users')
+    .update({ must_change_password: false })
+    .eq('id', (await sb.auth.getUser()).data.user.id);
+
+  setBtnLoading(btn, false, '비밀번호 변경하고 시작하기');
+
+  if(updateFlagErr){
+    showError('pw-error','pw-error-msg','비밀번호는 변경됐지만 상태 갱신에 실패했습니다. 다시 로그인해주세요.');
+    return;
+  }
+
+  document.getElementById('success-name').textContent = currentUserRow.name + ' 님';
+  showSuccessView(currentUserRow, ' · 비밀번호가 변경되었습니다');
+}
+
+// Enter 키로 로그인/변경 실행
+document.getElementById('password').addEventListener('keydown', e=>{ if(e.key==='Enter') handleLogin(); });
+document.getElementById('username').addEventListener('keydown', e=>{ if(e.key==='Enter') handleLogin(); });
+document.getElementById('new-password-confirm').addEventListener('keydown', e=>{ if(e.key==='Enter') handlePasswordChange(); });
+
+// 이미 로그인된 세션이 있으면 자동으로 확인
+(async ()=>{
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session){
+    const { data: userRow } = await sb.from('users').select('name, role, status, must_change_password').eq('id', session.user.id).single();
+    if(userRow){
+      if(userRow.status === 'pending' || userRow.status === 'rejected'){
+        await sb.auth.signOut();
+        return;
+      }
+      currentUserRow = userRow;
+      if(userRow.must_change_password){ showView('pwchange-view'); }
+      else { showSuccessView(userRow, ' · 이미 로그인되어 있습니다'); }
+    }
+  }
+})();
+</script>
+</body>
+</html>

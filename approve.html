@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>가입 승인 관리 — 스카이라이프 영업점 CRM</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Malgun Gothic','맑은 고딕',sans-serif;font-size:13px;background:#eef0f4;color:#1a1a2e;min-height:100vh}
+.app-header{background:#0d2b6b;color:#fff;padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:44px}
+.app-header h1{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.logo-badge{background:#e8382c;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:.04em}
+.user-info{font-size:11px;color:rgba(255,255,255,.65);display:flex;align-items:center;gap:10px}
+.user-info button{background:none;border:1px solid rgba(255,255,255,.3);color:#fff;font-size:11px;padding:4px 10px;border-radius:4px;cursor:pointer}
+.user-info button:hover{background:rgba(255,255,255,.1)}
+.main{max-width:820px;margin:0 auto;padding:24px 20px 40px}
+.section-title{font-size:15px;font-weight:700;color:#0d2b6b;margin-bottom:4px}
+.section-desc{font-size:12px;color:#6b7280;margin-bottom:20px}
+.card{background:#fff;border:1px solid #dde2ef;border-radius:8px;padding:16px 18px;margin-bottom:12px}
+.card-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.card-info{flex:1;min-width:200px}
+.card-name{font-size:14px;font-weight:700;color:#1a1a2e}
+.card-meta{font-size:12px;color:#6b7280;margin-top:2px}
+.card-meta .id-tag{font-family:monospace;background:#f0f2f7;padding:1px 6px;border-radius:4px;color:#374151}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;margin-left:6px}
+.badge-staff{background:#dbeafe;color:#1e40af}
+.badge-branch{background:#fef3c7;color:#92400e}
+.badge-admin{background:#fee2e2;color:#991b1b}
+.badge-done{background:#d1fae5;color:#065f46}
+.badge-notyet{background:#f3f4f6;color:#6b7280}
+.card-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+select.role-select{border:1px solid #cdd2df;border-radius:5px;padding:6px 8px;font-size:12px;background:#fff}
+.btn{padding:6px 14px;font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;border:1px solid transparent;white-space:nowrap}
+.btn-approve{background:#0d2b6b;color:#fff}
+.btn-approve:hover{background:#0a2257}
+.btn-reject{background:#fff;color:#991b1b;border-color:#fca5a5}
+.btn-reject:hover{background:#fee2e2}
+.empty-state{text-align:center;padding:40px;color:#9ca3af;font-size:13px}
+.toast{position:fixed;bottom:20px;right:20px;background:#1a1a2e;color:#fff;padding:9px 16px;border-radius:5px;font-size:12px;z-index:999;opacity:0;transition:opacity .25s;pointer-events:none}
+.toast.show{opacity:1}
+.access-denied{max-width:400px;margin:80px auto;text-align:center;padding:32px;background:#fff;border-radius:10px;box-shadow:0 8px 32px rgba(13,43,107,.10)}
+.access-denied p{font-size:13px;color:#6b7280;margin-top:8px}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+
+<div id="denied-view" class="hidden">
+  <div class="access-denied">
+    <p style="font-size:15px;font-weight:700;color:#0d2b6b">접근 권한이 없습니다</p>
+    <p>관리자 또는 내부직원 계정으로 로그인해주세요.</p>
+    <button class="btn btn-approve" style="margin-top:16px" onclick="location.href='index.html'">로그인 화면으로</button>
+  </div>
+</div>
+
+<div id="main-view" class="hidden">
+  <header class="app-header">
+    <h1><span class="logo-badge">SKYLIFE</span>가입 승인 관리</h1>
+    <div class="user-info">
+      <span id="me-name"></span>
+      <button onclick="handleLogout()">로그아웃</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <p class="section-title">승인 대기 목록</p>
+    <p class="section-desc">가입 신청자의 정보를 확인하고 권한을 지정해서 승인 또는 거절해주세요. 영업점 권한을 선택하면 기존 영업점과 연결하거나 새 영업점으로 등록할 수 있습니다.</p>
+    <div id="pending-list"></div>
+    <div id="empty-state" class="empty-state hidden">대기 중인 가입 신청이 없습니다.</div>
+
+    <p class="section-title" style="margin-top:32px">최근 승인 목록 <span style="font-size:11px;font-weight:400;color:#9ca3af">(최근 7일)</span></p>
+    <p class="section-desc">승인 후 실제로 로그인해서 시스템을 사용했는지 확인할 수 있습니다.</p>
+    <div id="recent-list"></div>
+    <div id="recent-empty" class="empty-state hidden">최근 7일 이내 승인된 계정이 없습니다.</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://znmfpvyhnmenbvfxzbip.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_jAPWVI1eqLBAruHKsOIcmg_FvtF6Kc5';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let branchList = [];
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+async function handleLogout(){
+  await sb.auth.signOut();
+  location.href = 'index.html';
+}
+
+async function init(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(!session){
+    document.getElementById('denied-view').classList.remove('hidden');
+    return;
+  }
+
+  const { data: me, error: meErr } = await sb.from('users')
+    .select('name, role, status')
+    .eq('id', session.user.id)
+    .single();
+
+  if(meErr || !me || me.status !== 'active' || !['admin','staff'].includes(me.role)){
+    document.getElementById('denied-view').classList.remove('hidden');
+    return;
+  }
+
+  document.getElementById('me-name').textContent = me.name + ' 님';
+  document.getElementById('main-view').classList.remove('hidden');
+
+  const { data: branches } = await sb.from('branches').select('id, branch_name').order('branch_name');
+  branchList = branches || [];
+
+  await loadPendingUsers();
+  await loadRecentApproved();
+}
+
+function roleLabel(role){
+  if(role==='admin') return '관리자';
+  if(role==='staff') return '내부직원';
+  if(role==='branch') return '영업점';
+  return '—';
+}
+
+async function loadPendingUsers(){
+  const { data: pending, error } = await sb.from('users')
+    .select('id, name, login_id, requested_role, requested_branch_name, created_at')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true });
+
+  const listEl = document.getElementById('pending-list');
+  const emptyEl = document.getElementById('empty-state');
+
+  if(error){
+    listEl.innerHTML = '';
+    emptyEl.textContent = '목록을 불러오지 못했습니다: ' + error.message;
+    emptyEl.classList.remove('hidden');
+    return;
+  }
+
+  if(!pending || pending.length===0){
+    listEl.innerHTML = '';
+    emptyEl.textContent = '대기 중인 가입 신청이 없습니다.';
+    emptyEl.classList.remove('hidden');
+    return;
+  }
+
+  emptyEl.classList.add('hidden');
+
+  listEl.innerHTML = pending.map(function(u){
+    const isBranch = u.requested_role === 'branch';
+    const badgeHtml = isBranch
+      ? '<span class="badge badge-branch">영업점 신청</span>'
+      : '<span class="badge badge-staff">내부직원 신청</span>';
+
+    const branchOptions = branchList.map(function(b){
+      const isMatch = b.branch_name === u.requested_branch_name;
+      return '<option value="'+b.id+'" '+(isMatch?'selected':'')+'>'+b.branch_name+'</option>';
+    }).join('');
+    const branchSelectHtml =
+      '<select class="role-select" id="branch-sel-'+u.id+'">' +
+        branchOptions +
+        '<option value="__new__">+ 신규 영업점 등록 ('+ (u.requested_branch_name||'미입력') +')</option>' +
+      '</select>';
+
+    return '<div class="card" id="card-'+u.id+'">' +
+      '<div class="card-row">' +
+        '<div class="card-info">' +
+          '<div class="card-name">'+u.name+badgeHtml+'</div>' +
+          '<div class="card-meta">신청 아이디: <span class="id-tag">'+(u.login_id||'—')+'</span>' +
+            (isBranch ? ' · 신청 영업점: '+(u.requested_branch_name||'—') : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="card-actions">' +
+          '<select class="role-select" id="role-sel-'+u.id+'" onchange="onRoleSelectChange(\''+u.id+'\')">' +
+            '<option value="staff" '+(!isBranch?'selected':'')+'>내부직원</option>' +
+            '<option value="branch" '+(isBranch?'selected':'')+'>영업점</option>' +
+            '<option value="admin">관리자</option>' +
+          '</select>' +
+          '<span id="branch-wrap-'+u.id+'" style="'+(isBranch?'':'display:none')+'">'+branchSelectHtml+'</span>' +
+          '<button class="btn btn-approve" onclick="approveUser(\''+u.id+'\')">승인</button>' +
+          '<button class="btn btn-reject" onclick="rejectUser(\''+u.id+'\')">거절</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function onRoleSelectChange(userId){
+  const roleSel = document.getElementById('role-sel-'+userId);
+  const branchWrap = document.getElementById('branch-wrap-'+userId);
+  branchWrap.style.display = roleSel.value === 'branch' ? '' : 'none';
+}
+
+async function loadRecentApproved(){
+  const sevenDaysAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString();
+
+  const { data: recent, error } = await sb.from('users')
+    .select('id, name, login_id, role, status, approved_at, last_login_at')
+    .eq('status','active')
+    .gte('approved_at', sevenDaysAgo)
+    .order('approved_at', { ascending: false });
+
+  const listEl = document.getElementById('recent-list');
+  const emptyEl = document.getElementById('recent-empty');
+
+  if(error || !recent || recent.length===0){
+    listEl.innerHTML = '';
+    emptyEl.classList.remove('hidden');
+    return;
+  }
+
+  emptyEl.classList.add('hidden');
+
+  const roleBadgeClass = { admin:'badge-admin', staff:'badge-staff', branch:'badge-branch' };
+
+  listEl.innerHTML = recent.map(function(u){
+    const done = !!u.last_login_at;
+    const doneBadge = done
+      ? '<span class="badge badge-done">가입완료 (로그인함)</span>'
+      : '<span class="badge badge-notyet">미접속</span>';
+    const roleBadge = '<span class="badge '+(roleBadgeClass[u.role]||'')+'">'+roleLabel(u.role)+'</span>';
+    return '<div class="card">' +
+      '<div class="card-row">' +
+        '<div class="card-info">' +
+          '<div class="card-name">'+u.name+roleBadge+doneBadge+'</div>' +
+          '<div class="card-meta">아이디: <span class="id-tag">'+(u.login_id||'—')+'</span> · 승인일: '+(u.approved_at?u.approved_at.slice(0,10):'—')+'</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+async function approveUser(userId){
+  const roleSel = document.getElementById('role-sel-'+userId);
+  const selectedRole = roleSel.value; // admin/staff/branch — 직원이 최종 결정
+  let branchId = null;
+
+  if(selectedRole === 'branch'){
+    const sel = document.getElementById('branch-sel-'+userId);
+    const val = sel ? sel.value : null;
+
+    if(val === '__new__'){
+      const { data: userRow } = await sb.from('users').select('requested_branch_name').eq('id', userId).single();
+      const newBranchName = userRow ? userRow.requested_branch_name : null;
+      if(!newBranchName){
+        showToast('영업점명이 없어 신규 등록할 수 없습니다.');
+        return;
+      }
+      const branchCode = String(Date.now()).slice(-6);
+      const { data: newBranch, error: newBranchErr } = await sb.from('branches')
+        .insert({ branch_code: branchCode, branch_name: newBranchName })
+        .select('id')
+        .single();
+      if(newBranchErr){
+        showToast('영업점 등록 실패: ' + newBranchErr.message);
+        return;
+      }
+      branchId = newBranch.id;
+    } else {
+      branchId = val;
+    }
+  }
+
+  const update = {
+    role: selectedRole,
+    status: 'active',
+    branch_id: selectedRole==='branch' ? branchId : null,
+    approved_at: new Date().toISOString()
+  };
+
+  const { error } = await sb.from('users').update(update).eq('id', userId);
+
+  if(error){
+    showToast('승인 처리 실패: ' + error.message);
+    return;
+  }
+
+  showToast('승인 완료되었습니다.');
+  await loadPendingUsers();
+  await loadRecentApproved();
+}
+
+async function rejectUser(userId){
+  if(!confirm('이 신청을 거절하시겠습니까?')) return;
+
+  const { error } = await sb.from('users').update({ status: 'rejected' }).eq('id', userId);
+
+  if(error){
+    showToast('거절 처리 실패: ' + error.message);
+    return;
+  }
+
+  showToast('거절 처리되었습니다.');
+  await loadPendingUsers();
+}
+
+init();
+</script>
+</body>
+</html>
