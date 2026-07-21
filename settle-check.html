@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>정산 대조 - Skylife CRM</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+            "on-primary": "#ffffff", "secondary": "#b9100f", "surface-container": "#efedf3",
+            "tv-accent": "#7c3aed", "surface-container-high": "#e9e7ee", "internet-accent": "#0284c7",
+            "inverse-surface": "#2f3035", "on-secondary-container": "#fffbff",
+            "surface-bright": "#faf8ff", "inverse-primary": "#b3c5ff", "error": "#ba1a1a",
+            "surface-container-highest": "#e3e2e8", "surface-container-low": "#f4f3f9",
+            "surface-container-lowest": "#ffffff", "on-surface-variant": "#444650",
+            "on-secondary": "#ffffff", "surface-dim": "#dad9df", "primary": "#001748",
+            "on-primary-container": "#7d95db", "primary-fixed-dim": "#b3c5ff",
+            "warning-amber": "#92400e", "surface": "#faf8ff", "primary-fixed": "#dbe1ff",
+            "on-error": "#ffffff", "on-primary-fixed": "#00184a",
+            "surface-muted": "#f8fafc", "outline-variant": "#c5c6d2", "success-green": "#065f46",
+            "surface-variant": "#e3e2e8", "border-subtle": "#e2e8f0",
+            "primary-container": "#0d2b6b", "on-surface": "#1a1b20",
+            "on-primary-fixed-variant": "#2b4384",
+        },
+        "spacing": { "stack-sm": "0.5rem", "section-gap": "2rem", "container-max": "1280px", "stack-md": "1rem", "gutter": "1.25rem" },
+        "fontFamily": {
+            "body-sm": ["Inter"], "body-md": ["Inter"], "badge-label": ["Inter"],
+            "headline-md": ["Manrope"], "headline-lg": ["Manrope"],
+            "label-caps": ["Inter"], "table-header": ["Inter"]
+        },
+        "fontSize": {
+            "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+            "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+            "badge-label": ["10px", {"lineHeight": "12px", "fontWeight": "800"}],
+            "headline-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+            "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+            "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+            "table-header": ["12px", {"lineHeight": "16px", "fontWeight": "600"}]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #c5c6d2; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #757681; }
+  .drop-zone{ border:2px dashed #c5c6d2; border-radius:12px; transition:all .15s; }
+  .drop-zone.dragover{ border-color:#001748; background:#f0f4ff; }
+  .badge-error{ background:#fee2e2; color:#991b1b; }
+  .badge-warn{ background:#fef3c7; color:#92400e; }
+  .badge-ok{ background:#d1fae5; color:#065f46; }
+  .badge-skip{ background:#e3e2e8; color:#444650; }
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body class="bg-surface-muted text-on-surface font-body-md text-body-md min-h-screen w-full">
+
+<header class="bg-surface-container-lowest h-16 flex items-center justify-between px-gutter shadow-sm z-30 shrink-0 sticky top-0">
+  <div class="flex items-center gap-3">
+    <span class="material-symbols-outlined text-primary">fact_check</span>
+    <h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">정산 대조</h1>
+  </div>
+  <div class="flex items-center gap-2">
+    <button onclick="location.href='crm.html'" class="text-[12px] border border-border-subtle rounded px-3 py-1 hover:bg-surface-container-low transition-colors">접수 페이지로</button>
+    <button onclick="handleLogout()" class="text-[12px] border border-border-subtle rounded px-3 py-1 hover:bg-surface-container-low transition-colors">로그아웃</button>
+  </div>
+</header>
+
+<div id="denied-view" class="hidden max-w-lg mx-auto mt-24 text-center">
+  <p class="font-headline-md text-headline-md font-bold text-primary mb-2">접근 권한이 없습니다</p>
+  <p class="text-body-sm text-on-surface-variant mb-6">정산 대조 화면은 관리자/내부직원만 이용 가능합니다.</p>
+  <button onclick="location.href='crm.html'" class="bg-primary text-on-primary rounded-lg px-4 py-2 font-body-sm">접수 페이지로</button>
+</div>
+
+<div id="main-view" class="hidden max-w-[1280px] mx-auto p-gutter pb-32">
+
+  <!-- 업로드 영역 -->
+  <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm mb-6">
+    <p class="font-headline-md text-headline-md font-bold text-primary mb-1">스카이라이프 수수료 내역서 업로드</p>
+    <p class="text-body-sm text-on-surface-variant mb-4">본사에서 받은 수수료 내역서(.xlsx)를 업로드하면 CRM 접수 데이터와 자동으로 대조합니다. 파일은 브라우저에서만 처리되며 서버에 저장되지 않습니다.</p>
+
+    <div id="drop-zone" class="drop-zone p-10 text-center cursor-pointer" onclick="document.getElementById('file-input').click()">
+      <span class="material-symbols-outlined text-[40px] text-on-surface-variant">upload_file</span>
+      <p class="text-body-sm text-on-surface-variant mt-2">클릭하거나 파일을 여기로 드래그하세요</p>
+      <p class="text-[11px] text-on-surface-variant mt-1">.xlsx 파일만 지원</p>
+    </div>
+    <input type="file" id="file-input" accept=".xlsx" class="hidden" onchange="handleFileSelect(event)">
+
+    <div id="file-info" class="hidden mt-4 flex items-center gap-3 bg-surface-container-low rounded-lg px-4 py-3">
+      <span class="material-symbols-outlined text-primary">description</span>
+      <div class="flex-1">
+        <p class="font-medium text-body-sm" id="file-name"></p>
+        <p class="text-[11px] text-on-surface-variant" id="file-period"></p>
+      </div>
+      <button onclick="resetUpload()" class="text-[12px] text-error underline">다시 선택</button>
+    </div>
+
+    <div id="loading-box" class="hidden mt-4 text-center text-body-sm text-on-surface-variant">
+      <span class="material-symbols-outlined animate-spin align-middle">progress_activity</span> 대조 중...
+    </div>
+  </div>
+
+  <!-- 결과 요약 -->
+  <div id="result-summary" class="hidden grid grid-cols-5 gap-3 mb-6">
+    <div class="bg-surface-container-lowest rounded-xl p-4 text-center shadow-sm">
+      <p class="text-[24px] font-bold text-primary" id="sum-total">0</p>
+      <p class="text-[11px] text-on-surface-variant">정산서 총 건수</p>
+    </div>
+    <div class="bg-surface-container-lowest rounded-xl p-4 text-center shadow-sm">
+      <p class="text-[24px] font-bold text-success-green" id="sum-ok">0</p>
+      <p class="text-[11px] text-on-surface-variant">정상 매칭</p>
+    </div>
+    <div class="bg-surface-container-lowest rounded-xl p-4 text-center shadow-sm">
+      <p class="text-[24px] font-bold text-error" id="sum-error">0</p>
+      <p class="text-[11px] text-on-surface-variant">오류</p>
+    </div>
+    <div class="bg-surface-container-lowest rounded-xl p-4 text-center shadow-sm">
+      <p class="text-[24px] font-bold text-warning-amber" id="sum-review">0</p>
+      <p class="text-[11px] text-on-surface-variant">확인필요</p>
+    </div>
+    <div class="bg-surface-container-lowest rounded-xl p-4 text-center shadow-sm">
+      <p class="text-[24px] font-bold text-on-surface-variant" id="sum-missing">0</p>
+      <p class="text-[11px] text-on-surface-variant">CRM에 없음(미지급 의심)</p>
+    </div>
+  </div>
+
+  <!-- 필터 + 다운로드 -->
+  <div id="result-controls" class="hidden flex items-center justify-between mb-3">
+    <div class="flex gap-2">
+      <button data-filter="all" onclick="setFilter('all')" class="filter-btn px-4 py-1.5 text-body-sm font-semibold rounded-md bg-primary text-on-primary">전체</button>
+      <button data-filter="error" onclick="setFilter('error')" class="filter-btn px-4 py-1.5 text-body-sm font-semibold rounded-md bg-surface-container-low">오류만</button>
+      <button data-filter="review" onclick="setFilter('review')" class="filter-btn px-4 py-1.5 text-body-sm font-semibold rounded-md bg-surface-container-low">확인필요만</button>
+      <button data-filter="missing" onclick="setFilter('missing')" class="filter-btn px-4 py-1.5 text-body-sm font-semibold rounded-md bg-surface-container-low">CRM누락만</button>
+    </div>
+    <button onclick="exportResultCsv()" class="bg-success-green text-on-primary rounded-lg px-4 py-1.5 font-body-sm hover:bg-success-green/90 transition-colors flex items-center gap-2 shadow-sm">
+      <span class="material-symbols-outlined text-[18px]">download</span> 결과 CSV 다운로드
+    </button>
+  </div>
+
+  <!-- 결과 테이블 -->
+  <div id="result-table-wrap" class="hidden bg-surface-container-lowest rounded-xl shadow-sm overflow-x-auto">
+    <table class="w-full text-body-sm">
+      <thead class="bg-surface-container-low font-table-header text-table-header text-on-surface-variant sticky top-0">
+        <tr>
+          <th class="px-3 py-2 text-left">판정</th>
+          <th class="px-3 py-2 text-left">계약번호</th>
+          <th class="px-3 py-2 text-left">고객명</th>
+          <th class="px-3 py-2 text-left">구분</th>
+          <th class="px-3 py-2 text-left">사유</th>
+          <th class="px-3 py-2 text-left">정산서 값</th>
+          <th class="px-3 py-2 text-left">CRM 값</th>
+        </tr>
+      </thead>
+      <tbody id="result-tbody"></tbody>
+    </table>
+  </div>
+
+  <div id="excluded-note" class="hidden mt-4 text-[12px] text-on-surface-variant"></div>
+
+</div>
+
+<script>
+const SUPABASE_URL = 'https://znmfpvyhnmenbvfxzbip.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_jAPWVI1eqLBAruHKsOIcmg_FvtF6Kc5';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let crmLines = [];       // CRM record_lines (부모 record 정보 병합됨), 정산 대조 대상
+let settlePeriod = null; // { start:'2026-06-16', end:'2026-06-30' }
+let matchResults = [];   // 최종 결과 배열
+let currentFilter = 'all';
+
+// ─── 인증가드 ───
+async function init(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(!session){ location.href='index.html'; return; }
+
+  const { data: me, error } = await sb.from('users')
+    .select('id, name, role, status').eq('id', session.user.id).single();
+
+  if(error || !me || me.status !== 'active' || !['admin','staff'].includes(me.role)){
+    document.getElementById('denied-view').classList.remove('hidden');
+    return;
+  }
+
+  currentUser = me;
+  document.getElementById('main-view').classList.remove('hidden');
+  await loadCrmLines();
+}
+
+async function handleLogout(){
+  await sb.auth.signOut();
+  location.href = 'index.html';
+}
+
+// ─── CRM 데이터 로드 (record_lines + 부모 record 병합) ───
+async function loadCrmLines(){
+  const { data, error } = await sb.from('records').select('*, record_lines(*)');
+  if(error){ alert('CRM 데이터를 불러오지 못했습니다: '+error.message); return; }
+
+  crmLines = [];
+  (data||[]).forEach(function(row){
+    const rec = {
+      id: row.id, name: row.name, ssn: row.ssn, addr: row.addr, apt: row.apt,
+      branchCode: row.branch_code
+    };
+    (row.record_lines||[]).forEach(function(l){
+      crmLines.push({
+        recordId: rec.id, name: rec.name, ssn: rec.ssn, addr: rec.addr, apt: rec.apt,
+        branchCode: rec.branchCode,
+        lineId: l.id, kind: l.kind, prod: l.prod, contractPeriod: l.contract_period,
+        receiptNo: l.receipt_no, contractNo: l.contract_no,
+        status: l.status, openDate: l.open_date
+      });
+    });
+  });
+}
+
+// ─── 파일 업로드 UI ───
+const dropZone = document.getElementById('drop-zone');
+dropZone.addEventListener('dragover', e=>{ e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', ()=> dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e=>{
+  e.preventDefault(); dropZone.classList.remove('dragover');
+  if(e.dataTransfer.files.length) processFile(e.dataTransfer.files[0]);
+});
+function handleFileSelect(e){ if(e.target.files.length) processFile(e.target.files[0]); }
+
+function resetUpload(){
+  document.getElementById('file-info').classList.add('hidden');
+  document.getElementById('result-summary').classList.add('hidden');
+  document.getElementById('result-controls').classList.add('hidden');
+  document.getElementById('result-table-wrap').classList.add('hidden');
+  document.getElementById('excluded-note').classList.add('hidden');
+  document.getElementById('file-input').value='';
+}
+
+function parsePeriodFromFilename(name){
+  // 예: 2026_06_16_06_30_스카이라이프_수수료_내역서_혜담.xlsx
+  const m = name.match(/^(\d{4})_(\d{2})_(\d{2})_(\d{2})_(\d{2})/);
+  if(!m) return null;
+  const [, y, m1, d1, m2, d2] = m;
+  return { start: `${y}-${m1}-${d1}`, end: `${y}-${m2}-${d2}` };
+}
+
+async function processFile(file){
+  document.getElementById('file-info').classList.remove('hidden');
+  document.getElementById('file-name').textContent = file.name;
+  settlePeriod = parsePeriodFromFilename(file.name);
+  document.getElementById('file-period').textContent = settlePeriod
+    ? `정산 기간: ${settlePeriod.start} ~ ${settlePeriod.end}`
+    : '정산 기간을 파일명에서 인식하지 못했습니다 — 개통일 기준 CRM 대조는 생략됩니다.';
+
+  document.getElementById('loading-box').classList.remove('hidden');
+
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type:'array' });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:null });
+
+  runMatching(rows);
+
+  document.getElementById('loading-box').classList.add('hidden');
+}
+
+// ═══════════════════════════════════════════════════════
+// 정산서 파싱 + 대조 로직
+// ═══════════════════════════════════════════════════════
+
+function normPhoneDigits(s){ return (s||'').toString().replace(/\D/g,''); }
+function normContractNo(s){
+  // 앞자리 0 제거해서 비교 (인터넷행 8자리 vs TV행 10자리 등 자릿수 차이 흡수)
+  return (s||'').toString().replace(/\D/g,'').replace(/^0+/, '');
+}
+function excelDateToStr(v){
+  if(v==null) return '';
+  if(typeof v === 'number'){
+    const d = XLSX.SSF.parse_date_code(v);
+    if(!d) return '';
+    return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+  }
+  return v.toString().replace(/\./g,'-').trim();
+}
+
+// 상품명에서 핵심상품/과금유형/부가옵션 3단계 추출
+const BILLING_TYPES = ['사은품형','경품대체형','홈결합'];
+const ADDON_TAGS = ['안심','런칭프로모션','프로모션','2nd TV 추가할인','ipit TV 결합','ipit TV용'];
+
+function parseProductTiers(raw){
+  const s = (raw||'').toString();
+  const billing = BILLING_TYPES.find(function(b){ return s.indexOf(b) >= 0; }) || null;
+  const addons = ADDON_TAGS.filter(function(a){ return s.indexOf(a) >= 0; }).sort();
+  // 괄호 제거 + 개월수/연도코드 제거해서 핵심상품명만 추출
+  let core = s.replace(/\([^)]*\)/g, ' ').replace(/-티비:[가-힣a-zA-Z]+/g,' ').trim();
+  core = core.replace(/\s+/g,' ');
+  return { core, billing, addons: addons.join(',') };
+}
+
+function coreProductEqual(settleCore, crmProd, crmContractPeriod){
+  // 느슨한 포함비교: 공백/대소문자 무시하고 핵심 토큰들이 서로 포함관계인지
+  const a = settleCore.toLowerCase().replace(/\s/g,'');
+  const b = ((crmProd||'')+' '+(crmContractPeriod||'')).toLowerCase().replace(/\s/g,'');
+  if(!a || !b) return null; // 비교불가
+  return a.indexOf(b.slice(0,6)) >= 0 || b.indexOf(a.slice(0,6)) >= 0;
+}
+
+function yearMonthFromSsn(ssn){
+  const digits = (ssn||'').toString().replace(/\D/g,'');
+  if(digits.length < 4) return null;
+  return digits.slice(0,4); // YYMM (마스킹되어도 항상 남는 부분)
+}
+
+function nameHead(name){
+  const s = (name||'').toString().replace(/\*/g,'');
+  return s.slice(0, Math.max(1, s.length));
+}
+function nameMatch(a, b){
+  const an = nameHead(a), bn = nameHead(b);
+  if(!an || !bn) return false;
+  const shorter = an.length <= bn.length ? an : bn;
+  const longer = an.length <= bn.length ? bn : an;
+  return longer.indexOf(shorter) === 0;
+}
+function addrMatch(a, b){
+  const clean = s => (s||'').toString().replace(/\*/g,'').trim();
+  const an = clean(a), bn = clean(b);
+  if(!an || !bn) return false;
+  const len = Math.min(an.length, bn.length, 15);
+  if(len < 6) return false;
+  return an.slice(0,len) === bn.slice(0,len);
+}
+
+function fuzzyMatchLine(settleRow, candidates){
+  // candidates: 아직 매칭 안 된 CRM 라인들
+  let best = null, bestScore = 0;
+  candidates.forEach(function(c){
+    let score = 0;
+    if(nameMatch(settleRow.name, c.name)) score++;
+    const sYm = yearMonthFromSsn(settleRow.ssn), cYm = yearMonthFromSsn(c.ssn);
+    if(sYm && cYm && sYm === cYm) score++;
+    if(addrMatch(settleRow.addr, c.addr)) score++;
+    if(score > bestScore){ bestScore = score; best = c; }
+  });
+  return bestScore >= 2 ? { line: best, score: bestScore } : (bestScore === 1 ? { line: best, score: bestScore, weak:true } : null);
+}
+
+function runMatching(rows){
+  if(!rows.length){ alert('빈 파일이거나 읽을 수 없습니다.'); return; }
+  const header = rows[0].map(h => (h||'').toString().trim());
+  const col = name => header.indexOf(name);
+
+  const idx = {
+    receipt: col('접수번호'), contract: col('계약번호'), custName: col('계약명'),
+    ssn: col('주민번호'), open: col('개통'), addr: col('주소'),
+    event: col('이벤트명'), team: col('유치팀'), building: col('건물유형'),
+    apt: col('아파트'), final: col('최종지급')
+  };
+
+  if(idx.contract < 0 || idx.event < 0){
+    alert('예상한 컬럼 구조(계약번호/이벤트명 등)를 찾지 못했습니다. 파일 형식이 바뀌었을 수 있습니다.');
+    return;
+  }
+
+  const MOBILE_LABEL = '모바일영업수수료';
+  const GIFT_LABEL = '사은품';
+  const ONESTOP_LABEL = '원스톱수수료';
+
+  let excludedMobile=0, excludedGift=0, excludedRefund=0;
+  const settleRows = []; // 매칭 대상이 되는 정산서 행들 (라벨/모바일/사은품/환수 제외)
+
+  for(let r=1; r<rows.length; r++){
+    const row = rows[r];
+    if(!row || row.every(v=>v==null)) continue;
+    const aVal = (row[0]||'').toString();
+
+    if(aVal.indexOf('환수') >= 0){ excludedRefund++; continue; }
+    if(aVal === MOBILE_LABEL){ excludedMobile++; continue; }
+    if(aVal === GIFT_LABEL){ excludedGift++; continue; }
+
+    const contractNo = row[idx.contract];
+    if(!contractNo) continue; // 계약번호 자체가 없는 잡행은 스킵
+
+    const isReceiptNumRow = /^\d{9,}$/.test(aVal.replace(/\D/g,'')) && aVal.replace(/\D/g,'').length >= 9;
+
+    settleRows.push({
+      isOneStop: aVal === ONESTOP_LABEL,
+      receiptNo: isReceiptNumRow ? aVal : '',
+      contractNo: contractNo,
+      name: row[idx.custName],
+      ssn: row[idx.ssn],
+      openDate: excelDateToStr(row[idx.open]),
+      addr: row[idx.addr],
+      event: row[idx.event],
+      building: row[idx.building],
+      aptFee: idx.apt>=0 ? (Number(row[idx.apt])||0) : 0,
+      final: idx.final>=0 ? row[idx.final] : null
+    });
+  }
+
+  // CRM 라인 필터링 — 정산기간 있으면 그 기간 개통완료건만 "미지급 검사" 대상으로
+  const crmCandidates = crmLines.slice(); // 매칭 시도는 전체 대상(기간 제한은 미지급판정에서만 사용)
+  const usedCrmLineIds = new Set();
+
+  const results = [];
+
+  settleRows.forEach(function(sr){
+    // 1) 계약번호 정확 매칭
+    let matched = crmCandidates.find(function(c){
+      return !usedCrmLineIds.has(c.lineId) && normContractNo(c.contractNo) === normContractNo(sr.contractNo);
+    });
+    let matchMethod = matched ? 'contract' : null;
+
+    // 2) 실패 시 퍼지매칭
+    let fuzzyWeak = false;
+    if(!matched){
+      const pool = crmCandidates.filter(function(c){ return !usedCrmLineIds.has(c.lineId); });
+      const fz = fuzzyMatchLine(sr, pool);
+      if(fz){ matched = fz.line; matchMethod = 'fuzzy'; fuzzyWeak = !!fz.weak; }
+    }
+
+    if(!matched){
+      if(sr.isOneStop) return; // 원스톱수수료는 별도 매칭 실패해도 심각하지 않음(추가 지급행) — 건너뜀
+      results.push({
+        verdict: 'missing_in_crm',
+        contractNo: sr.contractNo, name: sr.name, kind: '-',
+        reason: '정산서에는 있는데 CRM에서 매칭되는 접수건을 찾지 못함',
+        settleVal: `${sr.event||''} / ${sr.addr||''}`, crmVal: '(매칭실패)'
+      });
+      return;
+    }
+
+    usedCrmLineIds.add(matched.lineId);
+
+    if(sr.isOneStop) return; // 원스톱은 매칭만 확인, 상품/아파트 등 세부검사 생략
+
+    const tiers = parseProductTiers(sr.event);
+    const rowErrors = [];
+
+    // 계약번호 불일치 (퍼지매칭으로 잡힌 경우 계약번호 자체가 다르다는 뜻)
+    if(matchMethod === 'fuzzy'){
+      rowErrors.push({
+        type: fuzzyWeak ? 'review' : 'error',
+        reason: fuzzyWeak ? '계약번호 불일치 + 이름/생년월일/주소 중 1개만 일치 (확인 필요)' : '계약번호 불일치 (이름/생년월일/주소로 매칭됨)',
+        settleVal: sr.contractNo, crmVal: matched.contractNo || '(없음)'
+      });
+    }
+
+    // 상품 비교 (핵심상품 + 과금유형 + 부가옵션 전부 일치해야 함)
+    const coreEq = coreProductEqual(tiers.core, matched.prod, matched.contractPeriod);
+    if(coreEq === false){
+      rowErrors.push({ type:'error', reason:'핵심 상품명 불일치', settleVal: tiers.core, crmVal: (matched.prod||'')+' '+(matched.contractPeriod||'') });
+    }
+    // 과금유형(사은품형/경품대체형/홈결합) — CRM쪽엔 별도 필드가 없어 상품명 텍스트에 포함되어 있지 않다면 참고 표시만
+    if(tiers.billing && matched.prod && matched.prod.indexOf(tiers.billing) < 0){
+      rowErrors.push({ type:'error', reason:'과금유형 불일치 ('+tiers.billing+')', settleVal: tiers.billing, crmVal: matched.prod||'(확인불가)' });
+    }
+    if(tiers.addons && matched.prod){
+      const missingAddons = tiers.addons.split(',').filter(function(a){ return matched.prod.indexOf(a) < 0; });
+      if(missingAddons.length){
+        rowErrors.push({ type:'error', reason:'부가옵션 불일치 ('+missingAddons.join(',')+')', settleVal: tiers.addons, crmVal: matched.prod||'(확인불가)' });
+      }
+    }
+
+    // 아파트 여부
+    const settleIsApt = sr.aptFee > 0 || (sr.building && sr.building.indexOf('아파트')>=0);
+    const crmIsApt = matched.apt === 'Y';
+    if(settleIsApt !== crmIsApt){
+      rowErrors.push({
+        type:'error', reason:'아파트 여부 불일치',
+        settleVal: settleIsApt ? 'Y (아파트 수수료 있음)' : 'N',
+        crmVal: crmIsApt ? 'Y' : 'N'
+      });
+    }
+
+    // 개통일 비교 (참고용, 형식차이 흡수 후 비교)
+    if(sr.openDate && matched.openDate && sr.openDate !== matched.openDate){
+      rowErrors.push({ type:'review', reason:'개통일 불일치', settleVal: sr.openDate, crmVal: matched.openDate });
+    }
+
+    if(rowErrors.length === 0){
+      results.push({
+        verdict: 'ok', contractNo: sr.contractNo, name: sr.name,
+        kind: matched.kind==='tv'?'TV':(matched.kind==='inet'?'인터넷':'-'),
+        reason: '정상 매칭', settleVal: '-', crmVal: '-'
+      });
+    } else {
+      rowErrors.forEach(function(e){
+        results.push({
+          verdict: e.type === 'review' ? 'review' : 'error',
+          contractNo: sr.contractNo, name: sr.name,
+          kind: matched.kind==='tv'?'TV':(matched.kind==='inet'?'인터넷':'-'),
+          reason: e.reason, settleVal: e.settleVal, crmVal: e.crmVal
+        });
+      });
+    }
+  });
+
+  // CRM엔 있는데 정산서에 없는 건 (미지급 의심) — 정산기간 내 개통완료 라인만 검사
+  if(settlePeriod){
+    crmLines.forEach(function(c){
+      if(usedCrmLineIds.has(c.lineId)) return;
+      if(c.status !== '개통완료') return;
+      if(!c.openDate) return;
+      if(c.openDate < settlePeriod.start || c.openDate > settlePeriod.end) return;
+      results.push({
+        verdict: 'missing_in_settle',
+        contractNo: c.contractNo || '(없음)', name: c.name,
+        kind: c.kind==='tv'?'TV':(c.kind==='inet'?'인터넷':'-'),
+        reason: '개통완료 처리됐는데 이번 정산서에서 못 찾음 — 미지급 의심',
+        settleVal: '(매칭실패)', crmVal: (c.contractNo||'')+' / '+(c.openDate||'')
+      });
+    });
+  }
+
+  matchResults = results;
+  renderResults();
+
+  document.getElementById('excluded-note').classList.remove('hidden');
+  document.getElementById('excluded-note').textContent =
+    `대조 제외: 모바일 ${excludedMobile}건, 사은품 지급행 ${excludedGift}건(별도 확인 필요), 전월 환수 ${excludedRefund}건`
+    + (settlePeriod ? '' : ' · 파일명에서 정산기간을 인식하지 못해 "CRM엔 있는데 정산서에 없음" 검사는 생략되었습니다.');
+}
+
+function renderResults(){
+  const total = matchResults.length;
+  const okCount = matchResults.filter(r=>r.verdict==='ok').length;
+  const errCount = matchResults.filter(r=>r.verdict==='error').length;
+  const reviewCount = matchResults.filter(r=>r.verdict==='review').length;
+  const missingCount = matchResults.filter(r=>r.verdict==='missing_in_crm'||r.verdict==='missing_in_settle').length;
+
+  document.getElementById('sum-total').textContent = total;
+  document.getElementById('sum-ok').textContent = okCount;
+  document.getElementById('sum-error').textContent = errCount;
+  document.getElementById('sum-review').textContent = reviewCount;
+  document.getElementById('sum-missing').textContent = missingCount;
+
+  document.getElementById('result-summary').classList.remove('hidden');
+  document.getElementById('result-controls').classList.remove('hidden');
+  document.getElementById('result-table-wrap').classList.remove('hidden');
+
+  drawTable();
+}
+
+function setFilter(f){
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b=>{
+    const active = b.dataset.filter === f;
+    b.className = 'filter-btn px-4 py-1.5 text-body-sm font-semibold rounded-md ' + (active ? 'bg-primary text-on-primary' : 'bg-surface-container-low');
+  });
+  drawTable();
+}
+
+const VERDICT_BADGE = {
+  ok: '<span class="badge-ok px-2 py-0.5 rounded text-[11px] font-semibold">정상</span>',
+  error: '<span class="badge-error px-2 py-0.5 rounded text-[11px] font-semibold">오류</span>',
+  review: '<span class="badge-warn px-2 py-0.5 rounded text-[11px] font-semibold">확인필요</span>',
+  missing_in_crm: '<span class="badge-warn px-2 py-0.5 rounded text-[11px] font-semibold">CRM누락</span>',
+  missing_in_settle: '<span class="badge-error px-2 py-0.5 rounded text-[11px] font-semibold">미지급의심</span>'
+};
+
+function drawTable(){
+  let rows = matchResults;
+  if(currentFilter==='error') rows = rows.filter(r=>r.verdict==='error');
+  if(currentFilter==='review') rows = rows.filter(r=>r.verdict==='review');
+  if(currentFilter==='missing') rows = rows.filter(r=>r.verdict==='missing_in_crm'||r.verdict==='missing_in_settle');
+  // 정상 매칭은 기본적으로 상단에서 안 보이게 (전체 필터에서도 오류/확인필요/누락 우선 노출)
+  if(currentFilter==='all') rows = rows.filter(r=>r.verdict!=='ok');
+
+  const tbody = document.getElementById('result-tbody');
+  if(!rows.length){
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-on-surface-variant">해당 항목이 없습니다.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(function(r){
+    return `<tr class="border-t border-border-subtle hover:bg-surface-container-low/50">
+      <td class="px-3 py-2">${VERDICT_BADGE[r.verdict]||r.verdict}</td>
+      <td class="px-3 py-2 font-mono text-[12px]">${r.contractNo||''}</td>
+      <td class="px-3 py-2">${r.name||''}</td>
+      <td class="px-3 py-2">${r.kind||''}</td>
+      <td class="px-3 py-2">${r.reason||''}</td>
+      <td class="px-3 py-2 text-[12px] text-on-surface-variant max-w-[220px] truncate" title="${(r.settleVal||'').replace(/"/g,'&quot;')}">${r.settleVal||''}</td>
+      <td class="px-3 py-2 text-[12px] text-on-surface-variant max-w-[220px] truncate" title="${(r.crmVal||'').replace(/"/g,'&quot;')}">${r.crmVal||''}</td>
+    </tr>`;
+  }).join('');
+}
+
+function exportResultCsv(){
+  const h = ['판정','계약번호','고객명','구분','사유','정산서값','CRM값'];
+  const rows = matchResults.map(r=>[
+    ({ok:'정상',error:'오류',review:'확인필요',missing_in_crm:'CRM누락',missing_in_settle:'미지급의심'})[r.verdict]||r.verdict,
+    r.contractNo||'', r.name||'', r.kind||'', r.reason||'', r.settleVal||'', r.crmVal||''
+  ]);
+  const csv = [h].concat(rows).map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '정산대조결과_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
+init();
+</script>
+</body>
+</html>
