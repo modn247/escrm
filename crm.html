@@ -664,26 +664,36 @@ function renderFiles(){
 // 신규등록 완료 후 호출 — pendingFiles를 실제 Storage에 업로드 + files 테이블에 기록
 async function uploadPendingFiles(recordId){
   if(pendingFiles.length===0) return;
+  var successCount = 0;
+  var failMessages = [];
+
   for(var i=0;i<pendingFiles.length;i++){
     var file = pendingFiles[i];
-    var storagePath = recordId + '/' + Date.now() + '_' + file.name;
+    var safeName = file.name.replace(/[^a-zA-Z0-9._\-가-힣]/g, '_');
+    var storagePath = recordId + '/' + Date.now() + '_' + safeName;
 
-    const { error: uploadErr } = await sb.storage.from('attachments').upload(storagePath, file);
-    if(uploadErr){
-      showToast('파일 업로드 실패 (' + file.name + '): ' + uploadErr.message);
-      continue;
-    }
+    const { error: uploadErr } = await sb.storage.from('attachments').upload(storagePath, file, {
+      contentType: file.type || 'application/octet-stream'
+    });
+    if(uploadErr){ failMessages.push(file.name+': '+uploadErr.message); continue; }
 
     const { error: dbErr } = await sb.from('files').insert({
       record_id: recordId,
       file_name: file.name,
       storage_path: storagePath
     });
-    if(dbErr){
-      showToast('파일 정보 저장 실패 (' + file.name + '): ' + dbErr.message);
-    }
+    if(dbErr){ failMessages.push(file.name+' (DB 기록 실패): '+dbErr.message); continue; }
+
+    successCount++;
   }
   pendingFiles = [];
+
+  if(failMessages.length > 0){
+    // 등록완료 토스트를 바로 이어서 덮어쓰지 않도록 약간 지연 후 표시
+    setTimeout(function(){
+      showToast('첨부파일 '+failMessages.length+'건 업로드 실패 — '+failMessages.join(' / '));
+    }, 1200);
+  }
 }
 
 // 상품 다중 회선 (동적 블록)
@@ -2349,23 +2359,38 @@ async function handleModalFileUpload(inputEl, recordId){
   var listEl = document.getElementById('modal-files-list');
   listEl.innerHTML = '업로드 중...';
 
+  var successCount = 0;
+  var failMessages = [];
+
   for(var i=0;i<files.length;i++){
     var file = files[i];
-    if(file.size > 5*1024*1024){ showToast(file.name+' — 파일이 너무 큽니다 (5MB 이하만 가능합니다).'); continue; }
+    if(file.size > 5*1024*1024){ failMessages.push(file.name+': 5MB 초과'); continue; }
 
-    var storagePath = recordId + '/' + Date.now() + '_' + file.name;
-    const { error: uploadErr } = await sb.storage.from('attachments').upload(storagePath, file);
-    if(uploadErr){ showToast('파일 업로드 실패 (' + file.name + '): ' + uploadErr.message); continue; }
+    // 파일명에 Storage 경로로 쓰기 곤란한 문자(공백, 특수문자 등)가 섞여있으면 안전하게 치환
+    var safeName = file.name.replace(/[^a-zA-Z0-9._\-가-힣]/g, '_');
+    var storagePath = recordId + '/' + Date.now() + '_' + safeName;
+
+    const { error: uploadErr } = await sb.storage.from('attachments').upload(storagePath, file, {
+      contentType: file.type || 'application/octet-stream'
+    });
+    if(uploadErr){ failMessages.push(file.name+': '+uploadErr.message); continue; }
 
     const { error: dbErr } = await sb.from('files').insert({
       record_id: recordId, file_name: file.name, storage_path: storagePath
     });
-    if(dbErr){ showToast('파일 정보 저장 실패 (' + file.name + '): ' + dbErr.message); }
+    if(dbErr){ failMessages.push(file.name+' (DB 기록 실패): '+dbErr.message); continue; }
+
+    successCount++;
   }
 
   inputEl.value = '';
   listEl.innerHTML = await renderFilesList(recordId);
-  showToast('파일 업로드가 완료되었습니다.');
+
+  if(failMessages.length > 0){
+    showToast((successCount>0 ? successCount+'건 성공, ' : '') + failMessages.length+'건 실패 — '+failMessages.join(' / '));
+  } else {
+    showToast('파일 업로드가 완료되었습니다 ('+successCount+'건).');
+  }
 }
 
 async function renderFilesList(recordId){
