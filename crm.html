@@ -2338,9 +2338,13 @@ async function openModal(idx){
 async function saveModal(){
   if(curModalIdx<0)return;
   var r=curRecs[curModalIdx]; // 회선+헤더 병합 객체
-  var ns=document.getElementById('modal-status').value;
-  var nm=document.getElementById('modal-memo').value;
-  var od=document.getElementById('modal-opendate')?document.getElementById('modal-opendate').value:'';
+
+  // 간소모달(modal-status/modal-opendate)과 전체상세(line-status/line-opendate)의 id가 다르므로 모드별로 분기
+  var statusEl = window._detailMode ? document.getElementById('line-status') : document.getElementById('modal-status');
+  var opendateEl = window._detailMode ? document.getElementById('line-opendate') : document.getElementById('modal-opendate');
+  var ns = statusEl ? statusEl.value : r.status;
+  var od = opendateEl ? opendateEl.value : (r.openDate||'');
+  var nm = document.getElementById('modal-memo').value;
   if(ns==='개통완료'&&!od) od=new Date().toISOString().slice(0,10);
 
   // 회선(line) 단위 업데이트 — 상태/개통일은 항상 이 회선에만 적용
