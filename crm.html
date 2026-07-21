@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <script id="tailwind-config">
   tailwind.config = {
     darkMode: "class",
@@ -126,7 +127,7 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-border-subtle">
           <div class="flex flex-col gap-1">
-            <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">영업점코드</label>
+            <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">영업점코드 <span class="text-secondary">*</span></label>
             <input id="f-branchcode" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all" placeholder="예: 279" type="text"/>
           </div>
           <div class="flex flex-col gap-1">
@@ -161,12 +162,15 @@
           </div>
           <div class="flex flex-col gap-1 lg:col-span-4">
             <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">설치 주소 <span class="text-secondary">*</span></label>
-            <div class="flex gap-2">
-              <input id="f-addr" class="flex-1 border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all" placeholder="우편번호 검색 후 상세 주소 입력" type="text"/>
-              <button onclick="alert('우편번호 API 연동 필요')" class="bg-surface-container-lowest text-primary border border-border-subtle rounded px-4 py-2 font-body-md text-body-md hover:bg-surface-container-low focus:ring-2 focus:ring-primary/12 transition-all flex items-center gap-2 whitespace-nowrap">
-                <span class="material-symbols-outlined text-[18px]">search</span> 우편번호
+            <div class="flex gap-2 mb-2">
+              <input id="f-addr-zip" class="w-28 border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 bg-surface-container-low" placeholder="우편번호" type="text" readonly/>
+              <input id="f-addr-base" class="flex-1 border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 bg-surface-container-low" placeholder="우편번호 검색을 눌러주세요" type="text" readonly/>
+              <button type="button" onclick="openAddressSearch()" class="bg-surface-container-lowest text-primary border border-border-subtle rounded px-4 py-2 font-body-md text-body-md hover:bg-surface-container-low focus:ring-2 focus:ring-primary/12 transition-all flex items-center gap-2 whitespace-nowrap">
+                <span class="material-symbols-outlined text-[18px]">search</span> 우편번호 검색
               </button>
             </div>
+            <input id="f-addr-detail" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all" placeholder="상세주소 입력 (동/호수 등)" type="text" oninput="syncFullAddr()"/>
+            <input id="f-addr" type="hidden"/>
           </div>
           <div class="flex flex-col gap-1">
             <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">아파트 여부 <span class="text-secondary">*</span></label>
@@ -229,7 +233,7 @@
             </select>
           </div>
           <div class="flex flex-col gap-1">
-            <label id="acct-label" class="font-label-caps text-label-caps text-on-surface-variant uppercase">계좌 / 카드번호</label>
+            <label id="acct-label" class="font-label-caps text-label-caps text-on-surface-variant uppercase">계좌 / 카드번호 <span class="text-secondary">*</span></label>
             <input id="f-acct" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all" placeholder="숫자만 입력" type="text" oninput="this.value=this.value.replace(/[^0-9]/g,'')"/>
           </div>
           <div class="flex flex-col gap-1">
@@ -364,7 +368,7 @@
           <span class="material-symbols-outlined">attach_file</span> 부가 정보 및 동의
         </h3>
         <div class="mb-6">
-          <label class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2 block">본인인증</label>
+          <label class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2 block">본인인증 <span class="text-secondary">*</span></label>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="flex flex-col gap-1">
               <select id="f-auth-type" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all bg-surface-container-lowest">
@@ -608,7 +612,7 @@ function toggleSameGiftPayer(){
 function updatePayLabels(){
   var v=document.getElementById('f-paymethod').value;
   document.getElementById('bank-label').textContent=v==='카드납부'?'카드사':'은행 / 카드사';
-  document.getElementById('acct-label').textContent=v==='카드납부'?'카드번호':'계좌 / 카드번호';
+  document.getElementById('acct-label').innerHTML=(v==='카드납부'?'카드번호':'계좌 / 카드번호')+' <span class="text-secondary">*</span>';
 }
 
 // 탭 전환
@@ -1246,7 +1250,12 @@ function parseInput(){
   } else unresolved.push('주민번호');
 
   var addr=getVal(['주소','address','설치주소','설치 주소']);
-  if(addr){document.getElementById('f-addr').value=addr;filled.push('주소');}
+  if(addr){
+    document.getElementById('f-addr-base').value=addr;
+    document.getElementById('f-addr-base').placeholder='';
+    document.getElementById('f-addr').value=addr;
+    filled.push('주소');
+  }
   else unresolved.push('주소');
 
   // ── 납부 정보 파싱 ──
@@ -1616,6 +1625,10 @@ window.addEventListener('DOMContentLoaded',async function(){
 // 데이터 계층 — Supabase 연동 (JS camelCase <-> DB snake_case 매핑)
 // ═══════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════
+// 데이터 계층 — records(고객 단위 헤더) + record_lines(회선 단위) 분리 구조
+// ═══════════════════════════════════════════════════════
+
 function dbToRecord(row){
   return {
     id: row.id, no: row.no, name: row.name, phone: row.phone,
@@ -1625,11 +1638,10 @@ function dbToRecord(row){
     paymethod: row.pay_method, bank: row.bank, acct: row.acct,
     payer: row.payer, relation: row.relation, payerBirth: row.payer_birth,
     product: row.product, branchCode: row.branch_code, installCode: row.install_code,
-    wishdate: row.wishdate, lineDetails: row.line_details || [],
+    wishdate: row.wishdate,
     priceBefore: row.price_before, priceAfter: row.price_after,
     gift: row.gift, giftItem: row.gift_item, giftPhone: row.gift_phone, giftDaenap: row.gift_daenap,
     gbank: row.gbank, gacct: row.gacct, gpayer: row.gpayer,
-    status: row.status, contract: row.contract, receiptNo: row.receipt_no, openDate: row.open_date,
     memo: row.memo, date: row.created_at ? row.created_at.slice(0,10) : ''
   };
 }
@@ -1656,7 +1668,6 @@ function recordToDb(rec){
   if('branchCode' in rec) out.branch_code = rec.branchCode;
   if('installCode' in rec) out.install_code = rec.installCode;
   if('wishdate' in rec) out.wishdate = rec.wishdate;
-  if('lineDetails' in rec) out.line_details = rec.lineDetails;
   if('priceBefore' in rec) out.price_before = rec.priceBefore ? Number(rec.priceBefore) : null;
   if('priceAfter' in rec) out.price_after = rec.priceAfter ? Number(rec.priceAfter) : null;
   if('gift' in rec) out.gift = rec.gift ? Number(rec.gift) : null;
@@ -1666,25 +1677,86 @@ function recordToDb(rec){
   if('gbank' in rec) out.gbank = rec.gbank;
   if('gacct' in rec) out.gacct = rec.gacct;
   if('gpayer' in rec) out.gpayer = rec.gpayer;
-  if('status' in rec) out.status = rec.status;
-  if('contract' in rec) out.contract = rec.contract;
-  if('receiptNo' in rec) out.receipt_no = rec.receiptNo;
-  if('openDate' in rec) out.open_date = rec.openDate || null;
   if('memo' in rec) out.memo = rec.memo;
   return out;
 }
 
-var allRecords = []; // 마지막으로 불러온 전체 레코드 (RLS로 이미 권한별 필터링된 상태)
+// 회선(record_lines) 매핑
+function dbToLine(row){
+  return {
+    id: row.id, recordId: row.record_id, lineNo: row.line_no,
+    label: row.label, kind: row.kind, prod: row.prod,
+    contractPeriod: row.contract_period, wifi: row.wifi,
+    receiptNo: row.receipt_no, contractNo: row.contract_no,
+    status: row.status, openDate: row.open_date,
+    installCoupon: { checked: row.install_coupon_checked, amt: row.install_coupon_amt },
+    rateCoupon: { checked: row.rate_coupon_checked, amt: row.rate_coupon_amt, months: row.rate_coupon_months }
+  };
+}
+
+function lineToDb(line){
+  var out = {};
+  if('recordId' in line) out.record_id = line.recordId;
+  if('lineNo' in line) out.line_no = line.lineNo;
+  if('label' in line) out.label = line.label;
+  if('kind' in line) out.kind = line.kind;
+  if('prod' in line) out.prod = line.prod;
+  if('contractPeriod' in line) out.contract_period = line.contractPeriod;
+  if('wifi' in line) out.wifi = line.wifi;
+  if('receiptNo' in line) out.receipt_no = line.receiptNo;
+  if('contractNo' in line) out.contract_no = line.contractNo;
+  if('status' in line) out.status = line.status;
+  if('openDate' in line) out.open_date = line.openDate || null;
+  if('installCoupon' in line){
+    out.install_coupon_checked = line.installCoupon.checked;
+    out.install_coupon_amt = line.installCoupon.amt ? Number(line.installCoupon.amt) : null;
+  }
+  if('rateCoupon' in line){
+    out.rate_coupon_checked = line.rateCoupon.checked;
+    out.rate_coupon_amt = line.rateCoupon.amt ? Number(line.rateCoupon.amt) : null;
+    out.rate_coupon_months = line.rateCoupon.months;
+  }
+  return out;
+}
+
+var recordsById = {};  // { recordId: record헤더 } — 캐시
+var allLines = [];     // 리스트/엑셀에서 쓰는 "회선 단위로 펼쳐진" 배열. 각 항목은 line + 부모 record 정보 병합
 
 async function fetchRecords(){
-  const { data, error } = await sb.from('records').select('*').order('created_at', { ascending: false });
+  // records + record_lines를 한 번에 조인해서 가져온 뒤, 회선단위로 펼침
+  const { data, error } = await sb.from('records')
+    .select('*, record_lines(*)')
+    .order('created_at', { ascending: false });
+
   if(error){
     showToast('접수 목록을 불러오지 못했습니다: ' + error.message);
-    allRecords = [];
+    allLines = []; recordsById = {};
     return;
   }
-  allRecords = (data || []).map(dbToRecord);
+
+  allLines = [];
+  recordsById = {};
+
+  (data || []).forEach(function(row){
+    var rec = dbToRecord(row);
+    recordsById[rec.id] = rec;
+    var lines = (row.record_lines || []).sort(function(a,b){ return (a.line_no||0)-(b.line_no||0); });
+    if(lines.length === 0){
+      // 회선이 하나도 없는 접수건(비정상 케이스) — 그래도 목록엔 1줄로라도 보이게
+      allLines.push(Object.assign({}, rec, {
+        lineId: null, label: '(회선없음)', prod: rec.product||'', contractPeriod:'', wifi:'',
+        receiptNo:'', contractNo:'', status:'익월접수예정', openDate:'',
+        installCoupon:{checked:false,amt:null}, rateCoupon:{checked:false,amt:null,months:''}
+      }));
+    } else {
+      lines.forEach(function(lineRow){
+        var line = dbToLine(lineRow);
+        allLines.push(Object.assign({}, rec, line, { recordId: rec.id, lineId: line.id }));
+      });
+    }
+  });
 }
+
 
 async function addHistory(recId){
   var type=document.getElementById('modal-hist-type').value;
@@ -1724,12 +1796,36 @@ async function renderHistList(recId){
 }
 
 
+// 우편번호 검색 (Daum 우편번호 서비스)
+function openAddressSearch(){
+  new daum.Postcode({
+    oncomplete: function(data){
+      var fullAddr = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress;
+      document.getElementById('f-addr-zip').value = data.zonecode;
+      document.getElementById('f-addr-base').value = fullAddr;
+      document.getElementById('f-addr-detail').focus();
+      syncFullAddr();
+    }
+  }).open();
+}
+// 상세주소 입력 시 최종 주소값(f-addr, 실제 저장/검증에 쓰이는 필드) 동기화
+function syncFullAddr(){
+  var zip = document.getElementById('f-addr-zip').value;
+  var base = document.getElementById('f-addr-base').value;
+  var detail = document.getElementById('f-addr-detail').value.trim();
+  var full = base + (detail?(' '+detail):'') + (zip?(' ('+zip+')'):'');
+  document.getElementById('f-addr').value = full.trim();
+}
+
 function resetForm(){
   if(!confirm('입력 내용을 모두 초기화할까요?'))return;
   document.getElementById('tab-form').querySelectorAll('input:not([type=radio]):not([type=checkbox]),select,textarea').forEach(el=>{
     el.value=''; el.readOnly=false; el.classList.remove('bg-surface-muted','text-on-surface-variant');
     if(el.tagName==='SELECT')el.disabled=false;
   });
+  document.getElementById('f-addr-zip').readOnly=true;
+  document.getElementById('f-addr-base').readOnly=true;
+  document.getElementById('f-addr-base').placeholder='우편번호 검색을 눌러주세요';
   document.getElementById('file-list').innerHTML='';
   document.getElementById('product-blocks').innerHTML='';
   bIdx=0; Object.keys(bTypes).forEach(k=>delete bTypes[k]);
@@ -1741,8 +1837,24 @@ function resetForm(){
 async function submitForm(){
   var name=document.getElementById('f-name').value.trim();
   var phone=document.getElementById('f-phone').value.trim();
+  var ssn=document.getElementById('f-ssn').value.trim();
+  var addr=document.getElementById('f-addr').value.trim();
+  var branchCode=document.getElementById('f-branchcode').value.trim();
+  var paymethod=document.getElementById('f-paymethod').value;
+  var acct=document.getElementById('f-acct').value.trim();
+  var authType=document.getElementById('f-auth-type').value;
+  var authValue=document.getElementById('f-auth-value').value.trim();
+
   if(!name){alert('고객명을 입력해주세요.');document.getElementById('f-name').focus();return;}
   if(!phone){alert('연락처를 입력해주세요.');document.getElementById('f-phone').focus();return;}
+  var phoneDigits=phone.replace(/[^0-9]/g,'');
+  if(!/^01[0-9]{8,9}$/.test(phoneDigits)){alert('연락처 형식이 올바르지 않습니다. (예: 010-1234-5678)');document.getElementById('f-phone').focus();return;}
+  if(!ssn){alert('주민번호를 입력해주세요.');document.getElementById('f-ssn').focus();return;}
+  if(!addr){alert('설치주소를 입력해주세요.');document.getElementById('f-addr').focus();return;}
+  if(!branchCode){alert('영업점코드를 입력해주세요.');document.getElementById('f-branchcode').focus();return;}
+  if(!paymethod){alert('납부방법을 선택해주세요.');document.getElementById('f-paymethod').focus();return;}
+  if(!acct){alert('계좌/카드번호를 입력해주세요.');document.getElementById('f-acct').focus();return;}
+  if(!authType||!authValue){alert('본인인증 유형과 값을 모두 입력해주세요.');document.getElementById('f-auth-value').focus();return;}
   if(!document.getElementById('agree-all').checked){alert('[필수] 개인정보 동의가 필요합니다.');return;}
   
   var parts=[];
@@ -1767,7 +1879,7 @@ async function submitForm(){
       var rn=document.getElementById(pfx+'-receiptno');
       var ic=document.getElementById(pfx+'-ic');
       var iw=document.getElementById(pfx+'-iw');
-      lineDetails.push(Object.assign({label:'인터넷',kind:'inet',prod:v?v.value:'',contract:ic?ic.value:'',wifi:iw?iw.value:'',receiptNo:rn?rn.value.trim():''},collectCoupon(pfx)));
+      lineDetails.push(Object.assign({label:'인터넷',kind:'inet',prod:v?v.value:'',contractPeriod:ic?ic.value:'',wifi:iw?iw.value:'',receiptNo:rn?rn.value.trim():''},collectCoupon(pfx)));
     } else if(type==='dps'){
       var cnt=dpsTvCount[id]||1;
       for(var ti=1;ti<=cnt;ti++){
@@ -1775,22 +1887,23 @@ async function submitForm(){
         var tv=document.getElementById(tvPfx+'-tp');if(tv&&tv.value)parts.push(tv.value);
         var trn=document.getElementById(tvPfx+'-receiptno');
         var tc=document.getElementById(tvPfx+'-tc');
-        lineDetails.push(Object.assign({label:'TV'+ti,kind:'tv',prod:tv?tv.value:'',contract:tc?tc.value:'',receiptNo:trn?trn.value.trim():''},collectCoupon(tvPfx)));
+        lineDetails.push(Object.assign({label:'TV'+ti,kind:'tv',prod:tv?tv.value:'',contractPeriod:tc?tc.value:'',receiptNo:trn?trn.value.trim():''},collectCoupon(tvPfx)));
       }
       var inetPfx='b'+id+'_inet';
       var inet=document.getElementById(inetPfx+'-ip');if(inet&&inet.value)parts.push(inet.value);
       var irn=document.getElementById(inetPfx+'-receiptno');
       var iic=document.getElementById(inetPfx+'-ic');
       var iiw=document.getElementById(inetPfx+'-iw');
-      lineDetails.push(Object.assign({label:'인터넷',kind:'inet',prod:inet?inet.value:'',contract:iic?iic.value:'',wifi:iiw?iiw.value:'',receiptNo:irn?irn.value.trim():''},collectCoupon(inetPfx)));
+      lineDetails.push(Object.assign({label:'인터넷',kind:'inet',prod:inet?inet.value:'',contractPeriod:iic?iic.value:'',wifi:iiw?iiw.value:'',receiptNo:irn?irn.value.trim():''},collectCoupon(inetPfx)));
     } else if(type==='tvonly'||type==='tv'){
       var tvPfx1='b'+id+'_tv1';
       var tv1=document.getElementById(tvPfx1+'-tp');if(tv1&&tv1.value)parts.push(tv1.value);
       var t1rn=document.getElementById(tvPfx1+'-receiptno');
       var t1c=document.getElementById(tvPfx1+'-tc');
-      lineDetails.push(Object.assign({label:'TV',kind:'tv',prod:tv1?tv1.value:'',contract:t1c?t1c.value:'',receiptNo:t1rn?t1rn.value.trim():''},collectCoupon(tvPfx1)));
+      lineDetails.push(Object.assign({label:'TV',kind:'tv',prod:tv1?tv1.value:'',contractPeriod:t1c?t1c.value:'',receiptNo:t1rn?t1rn.value.trim():''},collectCoupon(tvPfx1)));
     }
   });
+  if(parts.length===0){alert('상품을 최소 1개 이상 선택해주세요.');return;}
   var summary = parts.join(' + ')||'(미입력)';
 
   var newRecord = {
@@ -1819,20 +1932,39 @@ async function submitForm(){
     branchCode:document.getElementById('f-branchcode').value.trim(),
     installCode:document.getElementById('f-installcode').value.trim(),
     wishdate:(document.getElementById('f-wishdate').value||'')+(document.getElementById('f-wishdate-asap-check').checked?' 최대한빠르게':''),
-    lineDetails:lineDetails,
     priceBefore:document.getElementById('f-pricebefore').value.replace(/,/g,''),
     priceAfter:document.getElementById('f-priceafter').value.replace(/,/g,''),
-    status:'익월접수예정', contract:'', receiptNo:'', openDate:'',
     memo:document.getElementById('f-memo').value.trim()
   };
 
   var dbRow = recordToDb(newRecord);
   dbRow.branch_id = currentUser.role==='branch' ? currentUser.branchId : null;
 
-  const { error } = await sb.from('records').insert(dbRow);
+  // 1) records 헤더 먼저 insert
+  const { data: insertedRecord, error } = await sb.from('records').insert(dbRow).select('id').single();
 
   if(error){
     showToast('등록 실패: ' + error.message);
+    return;
+  }
+
+  // 2) record_lines 회선별로 insert (헤더의 id를 참조)
+  var lineRows = lineDetails.map(function(ld, idx){
+    var dbLine = lineToDb({
+      recordId: insertedRecord.id, lineNo: idx+1,
+      label: ld.label, kind: ld.kind, prod: ld.prod,
+      contractPeriod: ld.contractPeriod, wifi: ld.wifi,
+      receiptNo: ld.receiptNo, contractNo: '',
+      status: '익월접수예정', openDate: '',
+      installCoupon: ld.installCoupon, rateCoupon: ld.rateCoupon
+    });
+    return dbLine;
+  });
+
+  const { error: lineError } = await sb.from('record_lines').insert(lineRows);
+
+  if(lineError){
+    showToast('회선 정보 등록 실패: ' + lineError.message + ' (고객 정보는 저장되었으나 회선 정보 등록에 실패했습니다. 상세보기에서 확인해주세요.)');
     return;
   }
 
@@ -1872,12 +2004,12 @@ function ssn6(ssn){
   return s.slice(0,6);
 }
 async function renderTable(){
-  await fetchRecords(); // RLS가 이미 권한별로 필터링해서 반환함
+  await fetchRecords(); // RLS가 이미 권한별로 필터링해서 반환함 — allLines는 회선단위로 펼쳐진 배열
 
   var from=document.getElementById('date-from').value;
   var to=document.getElementById('date-to').value;
   var st=document.getElementById('filter-status').value;
-  var data=allRecords;
+  var data=allLines;
   if(from)data=data.filter(r=>r.date>=from);
   if(to)data=data.filter(r=>r.date<=to);
   if(st)data=data.filter(r=>r.status===st);
@@ -1888,11 +2020,11 @@ async function renderTable(){
   tbody.innerHTML=data.map((r,i)=>`
     <tr class="hover:bg-surface-muted transition-colors">
       <td class="px-3 py-3" onclick="event.stopPropagation()">
-        <input type="text" value="${r.receiptNo||''}" placeholder="접수번호" onchange="updateReceiptNo('${r.id}',this.value)"
+        <input type="text" value="${r.receiptNo||''}" placeholder="접수번호" onchange="updateReceiptNo('${r.lineId}',this.value)"
           class="border border-border-subtle rounded px-2 py-1 text-[12px] w-20 focus:border-primary focus:ring-1 focus:ring-primary outline-none">
       </td>
       <td class="px-3 py-3" onclick="event.stopPropagation()">
-        <input type="text" value="${r.contract||''}" placeholder="계약번호 입력" onchange="updateContract('${r.id}',this.value)"
+        <input type="text" value="${r.contractNo||''}" placeholder="계약번호 입력" onchange="updateContract('${r.lineId}',this.value)"
           class="border border-border-subtle rounded px-2 py-1 text-[12px] w-28 focus:border-primary focus:ring-1 focus:ring-primary outline-none">
       </td>
       <td class="px-3 py-3 font-semibold cursor-pointer" onclick="openModal(${i})">${r.name}</td>
@@ -1901,10 +2033,12 @@ async function renderTable(){
       <td class="px-3 py-3 text-on-surface-variant text-[12px]">${r.date}</td>
       <td class="px-3 py-3 text-on-surface-variant text-[12px]">${r.wishdate||'—'}</td>
       <td class="px-3 py-3 text-[12px]" onclick="event.stopPropagation()">
-        <input type="date" value="${r.openDate||''}" onchange="updateOpenDate('${r.id}',this.value)"
+        <input type="date" value="${r.openDate||''}" onchange="updateOpenDate('${r.lineId}',this.value)"
           class="border border-border-subtle rounded px-1 py-1 text-[12px] focus:border-primary focus:ring-1 focus:ring-primary outline-none w-32">
       </td>
-      <td class="px-3 py-3 text-[12px] max-w-[160px] truncate cursor-pointer" title="${r.product||''}" onclick="openModal(${i})">${r.product||'—'}</td>
+      <td class="px-3 py-3 text-[12px] max-w-[160px] truncate cursor-pointer" title="${(r.label||'')+' '+(r.prod||'')}" onclick="openModal(${i})">
+        <span class="text-[10px] font-bold ${r.kind==='tv'?'text-tv-accent':'text-internet-accent'} mr-1">${r.label||''}</span>${r.prod||'—'}
+      </td>
       <td class="px-3 py-3 text-center cursor-pointer" onclick="openModal(${i})">
         <span class="px-2 py-1 rounded-full text-[10px] font-bold tracking-wide ${BADGE_MAP[r.status]||'bg-surface-variant text-on-surface'}">${r.status}</span>
       </td>
@@ -1915,32 +2049,34 @@ async function renderTable(){
       </td>
     </tr>`).join('');
 }
-async function updateOpenDate(id,val){
-  const { error } = await sb.from('records').update({ open_date: val || null }).eq('id', id);
+async function updateOpenDate(lineId,val){
+  if(!lineId||lineId==='null'){showToast('회선 정보가 없어 저장할 수 없습니다.');return;}
+  const { error } = await sb.from('record_lines').update({ open_date: val || null }).eq('id', lineId);
   if(error) showToast('개통일 저장 실패: ' + error.message);
 }
-async function updateReceiptNo(id,val){
-  const { error } = await sb.from('records').update({ receipt_no: val }).eq('id', id);
+async function updateReceiptNo(lineId,val){
+  if(!lineId||lineId==='null'){showToast('회선 정보가 없어 저장할 수 없습니다.');return;}
+  const { error } = await sb.from('record_lines').update({ receipt_no: val }).eq('id', lineId);
   if(error) showToast('접수번호 저장 실패: ' + error.message);
 }
-async function updateContract(id,val){
-  const { error } = await sb.from('records').update({ contract: val }).eq('id', id);
+async function updateContract(lineId,val){
+  if(!lineId||lineId==='null'){showToast('회선 정보가 없어 저장할 수 없습니다.');return;}
+  const { error } = await sb.from('record_lines').update({ contract_no: val }).eq('id', lineId);
   if(error) showToast('계약번호 저장 실패: ' + error.message);
 }
 async function openDetail(idx){
-  var r=curRecs[idx];
+  var r=curRecs[idx]; // r = 회선 + 헤더 병합 객체 (recordId, lineId 포함)
   var STATUS_LIST=['익월접수예정','접수완료','부재','사은품지급대기','정책입력중','청약대기','삭제요청','보류','고객취소','해지','환수완료','사은품지급완료','환수예정','개통완료','사은품지급보류','공사중','고우트미정산','선송금','테스트'];
   var opts=STATUS_LIST.map(s=>`<option ${s===r.status?'selected':''}>${s}</option>`).join('');
   var authOpts=['신분증','주민등록증','운전면허증'].map(s=>`<option ${s===r.authType?'selected':''}>${s}</option>`).join('');
   var relOpts=['본인','배우자','가족'].map(s=>`<option ${s===r.relation?'selected':''}>${s}</option>`).join('');
-  document.getElementById('modal-title').textContent=r.name+' 님 — 전체 상세';
+  document.getElementById('modal-title').textContent=r.name+' 님 — 전체 상세 ('+(r.label||'')+' 회선)';
 
   // 읽기전용 텍스트 표시 (수정 전)
   function viewRow(label,val){return `<div class="flex flex-col gap-1"><span class="text-[11px] font-semibold text-on-surface-variant uppercase">${label}</span><span class="text-body-sm text-on-surface py-0.5">${(val&&val.toString().trim())?val:'—'}</span></div>`;}
 
   // 섹션 빌더 — view/edit 두 버전을 같이 만들어서 토글 가능하게
   function buildSection(sectionId, title, fields){
-    // fields: [{label, id, val, type:'text'|'select', options:[{v,t}]}]
     var viewHtml = fields.map(function(f){return viewRow(f.label, f.val);}).join('');
     var editHtml = fields.map(function(f){
       if(f.type==='select'){
@@ -1962,8 +2098,9 @@ async function openDetail(idx){
     </div>`;
   }
 
-  // 회선별 상세 카드 (읽기전용 — 상품/약정/와이파이/접수번호/쿠폰 전부 표시)
-  function renderLineDetailCard(ld){
+  // 같은 접수건(record)의 다른 회선들 — 참고용 읽기전용 목록
+  var siblingLines = allLines.filter(function(x){ return x.recordId === r.recordId && x.lineId !== r.lineId; });
+  function renderSiblingCard(ld){
     var couponParts=[];
     if(ld.installCoupon&&ld.installCoupon.checked) couponParts.push('설치비감액 '+(ld.installCoupon.amt?Number(ld.installCoupon.amt).toLocaleString()+'원':''));
     if(ld.rateCoupon&&ld.rateCoupon.checked) couponParts.push('요금할인 '+(ld.rateCoupon.amt?Number(ld.rateCoupon.amt).toLocaleString()+'원':'')+(ld.rateCoupon.months?(' / '+ld.rateCoupon.months+'개월'):''));
@@ -1971,18 +2108,18 @@ async function openDetail(idx){
     return `<div class="border border-border-subtle rounded-lg p-3 bg-surface-container-lowest">
       <div class="flex items-center justify-between mb-1">
         <span class="text-body-sm font-semibold text-on-surface">${ld.label} — ${ld.prod||'(미입력)'}</span>
-        <span class="text-[11px] text-on-surface-variant">약정 ${ld.contract||'—'}${ld.wifi?(' · 와이파이 '+ld.wifi):''}</span>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${BADGE_MAP[ld.status]||'bg-surface-variant text-on-surface'}">${ld.status}</span>
       </div>
-      <div class="text-[12px] text-on-surface-variant">접수번호: ${ld.receiptNo||'미기입'}</div>
+      <div class="text-[11px] text-on-surface-variant">약정 ${ld.contractPeriod||'—'}${ld.wifi?(' · 와이파이 '+ld.wifi):''} · 접수번호 ${ld.receiptNo||'미기입'} · 개통일 ${ld.openDate||'—'}</div>
       <div class="text-[12px] text-secondary font-medium mt-1">${couponText}</div>
     </div>`;
   }
-  var lineDetailsHtml=(r.lineDetails||[]).map(renderLineDetailCard).join('');
+  var siblingHtml = siblingLines.map(renderSiblingCard).join('');
 
   document.getElementById('modal-body').innerHTML=`
     <div class="flex justify-between items-center mb-3">
       <p class="text-[11px] text-on-surface-variant">섹션별 [수정] 버튼을 눌러야 해당 항목을 편집할 수 있습니다.</p>
-      <button onclick="copyForKakao('${r.id}')" class="bg-success-green/10 text-success-green hover:bg-success-green/20 transition-colors rounded-lg px-4 py-2 text-body-sm font-semibold flex items-center gap-2 whitespace-nowrap">
+      <button onclick="copyForKakao('${r.recordId}')" class="bg-success-green/10 text-success-green hover:bg-success-green/20 transition-colors rounded-lg px-4 py-2 text-body-sm font-semibold flex items-center gap-2 whitespace-nowrap">
         <span class="material-symbols-outlined text-[16px]">content_copy</span> 카톡 전달용 텍스트 복사
       </button>
     </div>
@@ -2007,20 +2144,33 @@ async function openDetail(idx){
       {label:'예금주 생년월일',id:'modal-payerbirth',val:r.payerBirth}
     ])}
 
-    ${buildSection('sec-prod','상품 / 코드 정보',[
-      {label:'가입상품',id:'modal-product',val:r.product},
+    ${buildSection('sec-code','코드 / 설치 정보',[
       {label:'영업점코드',id:'modal-branchcode',val:r.branchCode},
       {label:'설치점코드',id:'modal-installcode',val:r.installCode},
       {label:'설치희망일',id:'modal-wishdate',val:r.wishdate}
     ])}
 
-    <div class="mb-4">
-      <div class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">회선별 상세 (상품·약정·접수번호·쿠폰)</div>
-      <div class="space-y-2">${lineDetailsHtml||'<p class="text-body-sm text-on-surface-variant">등록된 회선 정보가 없습니다.</p>'}</div>
+    <div class="font-label-caps text-label-caps text-tv-accent uppercase mb-2 border-t-2 border-primary/20 pt-3">이 회선 정보 — ${r.label||''} (직접 수정 가능)</div>
+    <div class="grid grid-cols-3 gap-3 bg-primary/5 p-4 rounded-lg border border-primary/30 mb-4">
+      <div class="flex flex-col gap-1"><label class="text-[11px] font-semibold text-on-surface-variant uppercase">상품명</label><input type="text" id="line-prod" value="${(r.prod||'').replace(/"/g,'&quot;')}" class="w-full border border-border-subtle rounded px-2 py-1.5 text-body-sm outline-none focus:border-primary bg-surface-container-lowest"></div>
+      <div class="flex flex-col gap-1"><label class="text-[11px] font-semibold text-on-surface-variant uppercase">약정</label><input type="text" id="line-contractperiod" value="${(r.contractPeriod||'').replace(/"/g,'&quot;')}" class="w-full border border-border-subtle rounded px-2 py-1.5 text-body-sm outline-none focus:border-primary bg-surface-container-lowest"></div>
+      <div class="flex flex-col gap-1"><label class="text-[11px] font-semibold text-on-surface-variant uppercase">와이파이</label><input type="text" id="line-wifi" value="${(r.wifi||'').replace(/"/g,'&quot;')}" class="w-full border border-border-subtle rounded px-2 py-1.5 text-body-sm outline-none focus:border-primary bg-surface-container-lowest"></div>
+      <div class="flex flex-col gap-1"><label class="text-[11px] font-semibold text-on-surface-variant uppercase">접수번호</label><input type="text" id="line-receiptno" value="${(r.receiptNo||'').replace(/"/g,'&quot;')}" class="w-full border border-border-subtle rounded px-2 py-1.5 text-body-sm outline-none focus:border-primary bg-surface-container-lowest"></div>
+      <div class="flex flex-col gap-1"><label class="text-[11px] font-semibold text-on-surface-variant uppercase">가입계약번호</label><input type="text" id="line-contractno" value="${(r.contractNo||'').replace(/"/g,'&quot;')}" class="w-full border border-border-subtle rounded px-2 py-1.5 text-body-sm outline-none focus:border-primary bg-surface-container-lowest"></div>
+      <div class="flex flex-col gap-1"><label class="text-[11px] font-semibold text-on-surface-variant uppercase">진행 상태</label><select id="line-status" class="w-full border border-border-subtle rounded px-2 py-1.5 text-body-sm outline-none focus:border-primary bg-surface-container-lowest">${opts}</select></div>
+      <div class="flex flex-col gap-1"><label class="text-[11px] font-semibold text-on-surface-variant uppercase">개통일</label><input type="date" id="line-opendate" value="${r.openDate||''}" class="w-full border border-border-subtle rounded px-2 py-1.5 text-body-sm outline-none focus:border-primary bg-surface-container-lowest"></div>
+      <div class="flex flex-col gap-1"><label class="flex items-center gap-2 cursor-pointer mt-5"><input type="checkbox" id="line-installcoupon-check" ${r.installCoupon&&r.installCoupon.checked?'checked':''} class="w-4 h-4"><span class="text-body-sm">설치비감액쿠폰</span></label><input type="text" id="line-installcoupon-amt" value="${r.installCoupon&&r.installCoupon.amt?r.installCoupon.amt:''}" placeholder="금액" class="w-full border border-border-subtle rounded px-2 py-1.5 text-body-sm outline-none focus:border-primary bg-surface-container-lowest mt-1"></div>
+      <div class="flex flex-col gap-1"><label class="flex items-center gap-2 cursor-pointer mt-5"><input type="checkbox" id="line-ratecoupon-check" ${r.rateCoupon&&r.rateCoupon.checked?'checked':''} class="w-4 h-4"><span class="text-body-sm">요금할인쿠폰</span></label><div class="flex gap-1 mt-1"><input type="text" id="line-ratecoupon-amt" value="${r.rateCoupon&&r.rateCoupon.amt?r.rateCoupon.amt:''}" placeholder="월금액" class="w-1/2 border border-border-subtle rounded px-2 py-1.5 text-body-sm outline-none focus:border-primary bg-surface-container-lowest"><input type="text" id="line-ratecoupon-months" value="${r.rateCoupon&&r.rateCoupon.months?r.rateCoupon.months:''}" placeholder="개월" class="w-1/2 border border-border-subtle rounded px-2 py-1.5 text-body-sm outline-none focus:border-primary bg-surface-container-lowest"></div></div>
     </div>
 
+    ${siblingLines.length>0?`
     <div class="mb-4">
-      <div class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">총 요금</div>
+      <div class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">같은 접수건의 다른 회선 (참고용)</div>
+      <div class="space-y-2">${siblingHtml}</div>
+    </div>`:''}
+
+    <div class="mb-4">
+      <div class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">총 요금 (접수건 전체 기준)</div>
       <div class="grid grid-cols-2 gap-3 bg-surface-muted p-4 rounded-lg border border-border-subtle">
         ${viewRow('할인 전 총 요금', r.priceBefore?Number(r.priceBefore).toLocaleString()+'원':'')}
         ${viewRow('할인 후 총 요금', r.priceAfter?Number(r.priceAfter).toLocaleString()+'원':'')}
@@ -2042,19 +2192,8 @@ async function openDetail(idx){
       ${(r.files&&r.files.length>0)?r.files.map(function(f){return `<div class="flex items-center justify-between py-1"><span>${f}</span><button onclick="downloadAttachedFile('${f}')" class="text-primary text-[12px] font-semibold hover:underline">다운로드</button></div>`;}).join(''):'첨부된 파일이 없습니다 (업로드 후 7일 뒤 자동삭제)'}
     </div>
 
-    <div class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">상태 변경 / 개통일</div>
-    <div class="grid grid-cols-2 gap-3 mb-4">
-      <div class="flex flex-col gap-1">
-        <label class="text-body-sm font-medium text-on-surface-variant">진행 상태</label>
-        <select id="modal-status" class="w-full border border-border-subtle rounded px-3 py-2 bg-surface-container-lowest text-body-sm outline-none focus:border-primary">${opts}</select>
-      </div>
-      <div class="flex flex-col gap-1">
-        <label class="text-body-sm font-medium text-on-surface-variant">개통일 <span class="text-[10px] text-on-surface-variant font-normal">(개통완료 시 자동, 수정가능)</span></label>
-        <input type="date" id="modal-opendate" value="${r.openDate||''}" class="w-full border border-border-subtle rounded px-3 py-2 text-body-sm outline-none focus:border-primary">
-      </div>
-    </div>
     <div class="flex flex-col gap-1 mb-4">
-      <label class="text-body-sm font-medium text-on-surface-variant">메모</label>
+      <label class="text-body-sm font-medium text-on-surface-variant">메모 (접수건 전체 공통)</label>
       <textarea id="modal-memo" class="w-full border border-border-subtle rounded px-3 py-2 text-body-sm min-h-[60px] resize-y outline-none focus:border-primary">${r.memo||''}</textarea>
     </div>
     <div class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2 border-t border-border-subtle pt-3">이력 등록</div>
@@ -2062,8 +2201,8 @@ async function openDetail(idx){
       <select id="modal-hist-type" class="border border-border-subtle rounded px-3 py-2 text-body-sm bg-surface-container-lowest outline-none focus:border-primary w-28 shrink-0">
         <option>요청사항</option><option>고객메모</option><option>회신완료</option>
       </select>
-      <input type="text" id="modal-hist-content" placeholder="내용 입력 후 Enter" class="flex-1 border border-border-subtle rounded px-3 py-2 text-body-sm outline-none focus:border-primary" onkeydown="if(event.key==='Enter'){addHistory('${r.id}');event.preventDefault();}">
-      <button onclick="addHistory('${r.id}')" class="bg-primary text-on-primary rounded px-4 py-2 text-body-sm font-medium hover:bg-on-primary-fixed-variant transition-colors whitespace-nowrap">등록</button>
+      <input type="text" id="modal-hist-content" placeholder="내용 입력 후 Enter" class="flex-1 border border-border-subtle rounded px-3 py-2 text-body-sm outline-none focus:border-primary" onkeydown="if(event.key==='Enter'){addHistory('${r.recordId}');event.preventDefault();}">
+      <button onclick="addHistory('${r.recordId}')" class="bg-primary text-on-primary rounded px-4 py-2 text-body-sm font-medium hover:bg-on-primary-fixed-variant transition-colors whitespace-nowrap">등록</button>
     </div>
     <div id="modal-hist-list" class="space-y-2 max-h-40 overflow-y-auto"><p class="text-body-sm text-on-surface-variant text-center py-3">불러오는 중...</p></div>`;
   curModalIdx=idx;
@@ -2071,7 +2210,7 @@ async function openDetail(idx){
   window._editedSections={}; // 어떤 섹션이 수정모드로 전환됐는지 추적
   document.getElementById('modal-overlay').classList.remove('hidden');
   document.getElementById('modal-overlay').classList.add('flex');
-  document.getElementById('modal-hist-list').innerHTML = await renderHistList(r.id);
+  document.getElementById('modal-hist-list').innerHTML = await renderHistList(r.recordId);
 }
 
 // 섹션 수정모드 토글
@@ -2098,8 +2237,9 @@ function downloadAttachedFile(name){
 }
 
 // 역파싱: 레코드 → 영업점이 보내던 형식의 텍스트로 복원, 클립보드 복사
-function copyForKakao(recId){
-  var r=curRecs.find(function(x){return x.id===recId;});
+function copyForKakao(recordId){
+  var r = recordsById[recordId];
+  var lines_of_record = allLines.filter(function(x){ return x.recordId === recordId; });
   if(!r){showToast('레코드를 찾을 수 없습니다.');return;}
   var lines=[];
   var codeHeader=(r.branchCode||'')+(r.installCode?(','+r.installCode):'');
@@ -2124,17 +2264,14 @@ function copyForKakao(recId){
   lines.push('OSS : '+(r.oss||'N')+(r.oss==='Y'?(' ('+(r.ossAsap?'설치 후 익일해지':('해지요청일 '+(r.ossTermDate||'미기입')))+')'):''));
   lines.push('아파트 : '+(r.apt||'N'));
   lines.push('설치희망일 : '+(r.wishdate||''));
-  if(r.lineDetails&&r.lineDetails.length>0){
-    r.lineDetails.forEach(function(ld){
-      var couponParts=[];
-      if(ld.installCoupon&&ld.installCoupon.checked) couponParts.push('설치비감액'+(ld.installCoupon.amt?(' '+Number(ld.installCoupon.amt).toLocaleString()+'원'):''));
-      if(ld.rateCoupon&&ld.rateCoupon.checked) couponParts.push('요금할인'+(ld.rateCoupon.amt?(' '+Number(ld.rateCoupon.amt).toLocaleString()+'원'):'')+(ld.rateCoupon.months?('/'+ld.rateCoupon.months+'개월'):''));
-      lines.push(ld.label+' : '+(ld.prod||'')+' / 약정 '+(ld.contract||'—')+(ld.wifi?(' / 와이파이 '+ld.wifi):'')+' / 접수번호 '+(ld.receiptNo||'미기입')+(couponParts.length>0?(' / '+couponParts.join(', ')):''));
-    });
-  }
+  lines_of_record.forEach(function(ld){
+    var couponParts=[];
+    if(ld.installCoupon&&ld.installCoupon.checked) couponParts.push('설치비감액'+(ld.installCoupon.amt?(' '+Number(ld.installCoupon.amt).toLocaleString()+'원'):''));
+    if(ld.rateCoupon&&ld.rateCoupon.checked) couponParts.push('요금할인'+(ld.rateCoupon.amt?(' '+Number(ld.rateCoupon.amt).toLocaleString()+'원'):'')+(ld.rateCoupon.months?('/'+ld.rateCoupon.months+'개월'):''));
+    lines.push((ld.label||'')+' : '+(ld.prod||'')+' / 약정 '+(ld.contractPeriod||'—')+(ld.wifi?(' / 와이파이 '+ld.wifi):'')+' / 접수번호 '+(ld.receiptNo||'미기입')+' / 상태 '+(ld.status||'')+(couponParts.length>0?(' / '+couponParts.join(', ')):''));
+  });
   if(r.priceBefore) lines.push('할인 전 총 요금 : '+Number(r.priceBefore).toLocaleString()+'원');
   if(r.priceAfter) lines.push('할인 후 총 요금 : '+Number(r.priceAfter).toLocaleString()+'원');
-  lines.push('['+(r.status||'')+']');
   var text=lines.join('\n');
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(text).then(function(){
@@ -2157,7 +2294,7 @@ function fallbackCopy(text){
 
 var curModalIdx=-1;
 async function openModal(idx){
-  // 간소 모달: 상태변경 + 이력만
+  // 간소 모달: 상태변경 + 이력만 (r은 클릭한 회선 하나)
   curModalIdx=idx; var r=curRecs[idx];
   window._detailMode=false;
   var STATUS_LIST=['익월접수예정','접수완료','부재','사은품지급대기','정책입력중','청약대기','삭제요청','보류','고객취소','해지','환수완료','사은품지급완료','환수예정','개통완료','사은품지급보류','공사중','고우트미정산','선송금','테스트'];
@@ -2167,13 +2304,13 @@ async function openModal(idx){
     <div class="flex items-center gap-3 mb-4 p-3 bg-surface-muted rounded-lg border border-border-subtle">
       <div class="flex-1 min-w-0">
         <p class="font-semibold text-on-surface">${r.name} <span class="text-on-surface-variant font-normal text-[12px] ml-1">${r.phone}</span></p>
-        <p class="text-[12px] text-on-surface-variant truncate">${r.product}</p>
+        <p class="text-[12px] text-on-surface-variant truncate"><span class="font-semibold ${r.kind==='tv'?'text-tv-accent':'text-internet-accent'}">${r.label||''}</span> ${r.prod||''}</p>
       </div>
       <button onclick="closeModal();openDetail(${idx})" class="text-[11px] text-primary font-semibold bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded transition-colors whitespace-nowrap">전체 상세 →</button>
     </div>
     <div class="flex gap-3 mb-4">
       <div class="flex flex-col gap-1 flex-1">
-        <label class="text-body-sm font-medium text-on-surface-variant">진행 상태</label>
+        <label class="text-body-sm font-medium text-on-surface-variant">진행 상태 (이 회선만)</label>
         <select id="modal-status" class="w-full border border-border-subtle rounded px-3 py-2 bg-surface-container-lowest text-body-sm outline-none focus:border-primary">${opts}</select>
       </div>
       <div class="flex flex-col gap-1 flex-1">
@@ -2182,7 +2319,7 @@ async function openModal(idx){
       </div>
     </div>
     <div class="flex flex-col gap-1 mb-4">
-      <label class="text-body-sm font-medium text-on-surface-variant">메모</label>
+      <label class="text-body-sm font-medium text-on-surface-variant">메모 (접수건 전체 공통)</label>
       <textarea id="modal-memo" class="w-full border border-border-subtle rounded px-3 py-2 text-body-sm min-h-[60px] resize-y outline-none focus:border-primary">${r.memo||''}</textarea>
     </div>
     <div class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2 border-t border-border-subtle pt-3">이력 등록</div>
@@ -2190,56 +2327,80 @@ async function openModal(idx){
       <select id="modal-hist-type" class="border border-border-subtle rounded px-3 py-2 text-body-sm bg-surface-container-lowest outline-none focus:border-primary w-28 shrink-0">
         <option>요청사항</option><option>고객메모</option><option>회신완료</option>
       </select>
-      <input type="text" id="modal-hist-content" placeholder="내용 입력 후 Enter" class="flex-1 border border-border-subtle rounded px-3 py-2 text-body-sm outline-none focus:border-primary" onkeydown="if(event.key==='Enter'){addHistory('${r.id}');event.preventDefault();}">
-      <button onclick="addHistory('${r.id}')" class="bg-primary text-on-primary rounded px-4 py-2 text-body-sm font-medium hover:bg-on-primary-fixed-variant whitespace-nowrap">등록</button>
+      <input type="text" id="modal-hist-content" placeholder="내용 입력 후 Enter" class="flex-1 border border-border-subtle rounded px-3 py-2 text-body-sm outline-none focus:border-primary" onkeydown="if(event.key==='Enter'){addHistory('${r.recordId}');event.preventDefault();}">
+      <button onclick="addHistory('${r.recordId}')" class="bg-primary text-on-primary rounded px-4 py-2 text-body-sm font-medium hover:bg-on-primary-fixed-variant whitespace-nowrap">등록</button>
     </div>
     <div id="modal-hist-list" class="space-y-2 max-h-40 overflow-y-auto"><p class="text-body-sm text-on-surface-variant text-center py-3">불러오는 중...</p></div>`;
   document.getElementById('modal-overlay').classList.remove('hidden');
   document.getElementById('modal-overlay').classList.add('flex');
-  document.getElementById('modal-hist-list').innerHTML = await renderHistList(r.id);
+  document.getElementById('modal-hist-list').innerHTML = await renderHistList(r.recordId);
 }
 async function saveModal(){
   if(curModalIdx<0)return;
-  var r=curRecs[curModalIdx];
+  var r=curRecs[curModalIdx]; // 회선+헤더 병합 객체
   var ns=document.getElementById('modal-status').value;
   var nm=document.getElementById('modal-memo').value;
   var od=document.getElementById('modal-opendate')?document.getElementById('modal-opendate').value:'';
   if(ns==='개통완료'&&!od) od=new Date().toISOString().slice(0,10);
-  var update={status:ns,memo:nm,openDate:od};
+
+  // 회선(line) 단위 업데이트 — 상태/개통일은 항상 이 회선에만 적용
+  var lineUpdate = { status: ns, openDate: od };
 
   if(window._detailMode){
-    // 전체 상세 모드 — 모든 필드 수집
-    var g=function(id){var el=document.getElementById(id);return el?el.value:undefined;};
-    update.name=g('modal-name');
-    update.phone=g('modal-phone');
-    update.ssn=g('modal-ssn');
-    update.addr=g('modal-addr');
-    update.apt=g('modal-apt');
-    update.oss=g('modal-oss');
-    update.authType=g('modal-authtype');
-    update.authValue=g('modal-authvalue');
-    update.paymethod=g('modal-paymethod');
-    update.bank=g('modal-bank');
-    update.acct=g('modal-acct');
-    update.payer=g('modal-payer');
-    update.relation=g('modal-relation');
-    update.payerBirth=g('modal-payerbirth');
-    update.product=g('modal-product');
-    update.branchCode=g('modal-branchcode');
-    update.installCode=g('modal-installcode');
-    update.wishdate=g('modal-wishdate');
-    update.gift=g('modal-gift');
-    update.giftItem=g('modal-giftitem');
-    update.giftPhone=g('modal-giftphone');
-    update.gbank=g('modal-gbank');
-    update.gacct=g('modal-gacct');
-    update.gpayer=g('modal-gpayer');
-    var daenapEl=document.getElementById('modal-daenap-view');
-    if(daenapEl) update.giftDaenap=(daenapEl.value==='Y');
-    // 회선별 상세(lineDetails)는 읽기전용이라 이 화면에서 수정하지 않음
+    // 전체 상세 모드 — "이 회선 정보" 섹션의 값들도 회선단위로 수집
+    var gl=function(id){var el=document.getElementById(id);return el?el.value:undefined;};
+    lineUpdate.prod = gl('line-prod');
+    lineUpdate.contractPeriod = gl('line-contractperiod');
+    lineUpdate.wifi = gl('line-wifi');
+    lineUpdate.receiptNo = gl('line-receiptno');
+    lineUpdate.contractNo = gl('line-contractno');
+    lineUpdate.installCoupon = {
+      checked: document.getElementById('line-installcoupon-check').checked,
+      amt: gl('line-installcoupon-amt')
+    };
+    lineUpdate.rateCoupon = {
+      checked: document.getElementById('line-ratecoupon-check').checked,
+      amt: gl('line-ratecoupon-amt'),
+      months: gl('line-ratecoupon-months')
+    };
   }
 
-  const { error } = await sb.from('records').update(recordToDb(update)).eq('id', r.id);
+  const { error: lineErr } = await sb.from('record_lines').update(lineToDb(lineUpdate)).eq('id', r.lineId);
+  if(lineErr){ showToast('회선 정보 저장 실패: ' + lineErr.message); return; }
+
+  // 헤더(record) 단위 업데이트 — memo는 항상, 전체상세 모드면 나머지 헤더필드도 수집
+  var headerUpdate = { memo: nm };
+
+  if(window._detailMode){
+    var g=function(id){var el=document.getElementById(id);return el?el.value:undefined;};
+    headerUpdate.name=g('modal-name');
+    headerUpdate.phone=g('modal-phone');
+    headerUpdate.ssn=g('modal-ssn');
+    headerUpdate.addr=g('modal-addr');
+    headerUpdate.apt=g('modal-apt');
+    headerUpdate.oss=g('modal-oss');
+    headerUpdate.authType=g('modal-authtype');
+    headerUpdate.authValue=g('modal-authvalue');
+    headerUpdate.paymethod=g('modal-paymethod');
+    headerUpdate.bank=g('modal-bank');
+    headerUpdate.acct=g('modal-acct');
+    headerUpdate.payer=g('modal-payer');
+    headerUpdate.relation=g('modal-relation');
+    headerUpdate.payerBirth=g('modal-payerbirth');
+    headerUpdate.branchCode=g('modal-branchcode');
+    headerUpdate.installCode=g('modal-installcode');
+    headerUpdate.wishdate=g('modal-wishdate');
+    headerUpdate.gift=g('modal-gift');
+    headerUpdate.giftItem=g('modal-giftitem');
+    headerUpdate.giftPhone=g('modal-giftphone');
+    headerUpdate.gbank=g('modal-gbank');
+    headerUpdate.gacct=g('modal-gacct');
+    headerUpdate.gpayer=g('modal-gpayer');
+    var daenapEl=document.getElementById('modal-daenap-view');
+    if(daenapEl) headerUpdate.giftDaenap=(daenapEl.value==='Y');
+  }
+
+  const { error } = await sb.from('records').update(recordToDb(headerUpdate)).eq('id', r.recordId);
 
   if(error){ showToast('저장 실패: ' + error.message); return; }
 
@@ -2251,9 +2412,15 @@ function closeModal(){document.getElementById('modal-overlay').classList.add('hi
 function closeModalOut(e){if(e.target===document.getElementById('modal-overlay'))closeModal();}
 
 function exportExcel(){
-  var data=curRecs.length?curRecs:allRecords;
-  var h=['접수번호','가입계약번호','고객명','연락처','상품명','접수일','설치희망일','개통일','상태','메모'];
-  var rows=data.map(r=>[r.receiptNo||'',r.contract||'',r.name,r.phone,r.product||'',r.date,r.wishdate||'',r.openDate||'',r.status,r.memo||'']);
+  var data=curRecs.length?curRecs:allLines;
+  var h=['접수번호','가입계약번호','고객명','연락처','회선구분','상품명','약정','접수일','설치희망일','개통일','상태','설치비감액쿠폰','요금할인쿠폰(월)'];
+  var rows=data.map(r=>[
+    r.receiptNo||'', r.contractNo||'', r.name, r.phone,
+    r.label||'', r.prod||'', r.contractPeriod||'',
+    r.date, r.wishdate||'', r.openDate||'', r.status,
+    (r.installCoupon&&r.installCoupon.checked)?(r.installCoupon.amt||''):'',
+    (r.rateCoupon&&r.rateCoupon.checked)?(r.rateCoupon.amt||''):''
+  ]);
   var csv=[h].concat(rows).map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
   var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
