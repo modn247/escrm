@@ -59,6 +59,8 @@ select.role-select{border:1px solid #cdd2df;border-radius:5px;padding:6px 8px;fo
     <h1><span class="logo-badge">SKYLIFE</span>가입 승인 관리</h1>
     <div class="user-info">
       <span id="me-name"></span>
+      <button onclick="location.href='crm.html'">접수 페이지로</button>
+      <button onclick="location.href='change-password.html'">비밀번호 변경</button>
       <button onclick="handleLogout()">로그아웃</button>
     </div>
   </header>
@@ -73,6 +75,10 @@ select.role-select{border:1px solid #cdd2df;border-radius:5px;padding:6px 8px;fo
     <p class="section-desc">승인 후 실제로 로그인해서 시스템을 사용했는지 확인할 수 있습니다.</p>
     <div id="recent-list"></div>
     <div id="recent-empty" class="empty-state hidden">최근 7일 이내 승인된 계정이 없습니다.</div>
+
+    <p class="section-title" style="margin-top:32px">전체 계정 관리</p>
+    <p class="section-desc">비밀번호를 잊어버린 계정은 임시 비밀번호로 초기화할 수 있습니다. 초기화하면 다음 로그인 시 비밀번호 변경이 강제됩니다.</p>
+    <div id="all-users-list"></div>
   </div>
 </div>
 
@@ -122,6 +128,7 @@ async function init(){
 
   await loadPendingUsers();
   await loadRecentApproved();
+  await loadAllUsers();
 }
 
 function roleLabel(role){
@@ -238,6 +245,60 @@ async function loadRecentApproved(){
       '</div>' +
     '</div>';
   }).join('');
+}
+
+// 전체 활성 계정 목록 (비밀번호 초기화용)
+async function loadAllUsers(){
+  const { data: allUsers, error } = await sb.from('users')
+    .select('id, name, login_id, role, status, branch_id')
+    .eq('status', 'active')
+    .order('role')
+    .order('name');
+
+  const listEl = document.getElementById('all-users-list');
+  if(error || !allUsers || allUsers.length===0){
+    listEl.innerHTML = '<div class="empty-state">등록된 계정이 없습니다.</div>';
+    return;
+  }
+
+  const roleBadgeClass = { admin:'badge-admin', staff:'badge-staff', branch:'badge-branch' };
+  const branchNameMap = {};
+  branchList.forEach(function(b){ branchNameMap[b.id] = b.branch_name; });
+
+  listEl.innerHTML = allUsers.map(function(u){
+    const roleBadge = '<span class="badge '+(roleBadgeClass[u.role]||'')+'">'+roleLabel(u.role)+'</span>';
+    const branchInfo = u.role==='branch' ? (' · 소속: '+(branchNameMap[u.branch_id]||'—')) : '';
+    return '<div class="card">' +
+      '<div class="card-row">' +
+        '<div class="card-info">' +
+          '<div class="card-name">'+u.name+roleBadge+'</div>' +
+          '<div class="card-meta">아이디: <span class="id-tag">'+(u.login_id||'—')+'</span>'+branchInfo+'</div>' +
+        '</div>' +
+        '<div class="card-actions">' +
+          '<button class="btn btn-reject" onclick="resetUserPassword(\''+u.id+'\',\''+u.name.replace(/'/g,"\\'")+'\')">비밀번호 초기화</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// 비밀번호 초기화 — Edge Function(reset-password)을 통해 처리 (service_role 키는 서버에만 있음)
+async function resetUserPassword(userId, userName){
+  if(!confirm(userName+' 님의 비밀번호를 임시 비밀번호로 초기화할까요?\n초기화 후 다음 로그인 시 새 비밀번호 설정이 강제됩니다.')) return;
+
+  const tempPassword = 'temp' + Math.floor(1000 + Math.random()*9000) + '!';
+
+  const { data, error } = await sb.functions.invoke('reset-password', {
+    body: { targetUserId: userId, newTempPassword: tempPassword }
+  });
+
+  if(error || (data && data.error)){
+    showToast('비밀번호 초기화 실패: ' + (error ? error.message : data.error));
+    return;
+  }
+
+  alert(userName+' 님의 임시 비밀번호: '+tempPassword+'\n\n이 비밀번호를 해당 직원/영업점에 전달해주세요. 다음 로그인 시 새 비밀번호로 변경하도록 안내해주세요.');
+  showToast('비밀번호가 초기화되었습니다.');
 }
 
 async function approveUser(userId){
