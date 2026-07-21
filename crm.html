@@ -1817,6 +1817,14 @@ function syncFullAddr(){
   document.getElementById('f-addr').value = full.trim();
 }
 
+// 저장된 설치희망일 문자열("2026-07-01 최대한빠르게")을 날짜/최대한빠르게 여부로 분리
+function parseWishdateParts(wishdate){
+  if(!wishdate) return {date:'', asap:false};
+  var m = wishdate.match(/^(\d{4}-\d{2}-\d{2})/);
+  var asap = wishdate.indexOf('최대한빠르게') >= 0;
+  return { date: m ? m[1] : '', asap: asap };
+}
+
 function resetForm(){
   if(!confirm('입력 내용을 모두 초기화할까요?'))return;
   document.getElementById('tab-form').querySelectorAll('input:not([type=radio]):not([type=checkbox]),select,textarea').forEach(el=>{
@@ -2052,7 +2060,20 @@ async function renderTable(){
 async function updateOpenDate(lineId,val){
   if(!lineId||lineId==='null'){showToast('회선 정보가 없어 저장할 수 없습니다.');return;}
   const { error } = await sb.from('record_lines').update({ open_date: val || null }).eq('id', lineId);
-  if(error) showToast('개통일 저장 실패: ' + error.message);
+  if(error){ showToast('개통일 저장 실패: ' + error.message); return; }
+
+  var thisLine = allLines.find(function(x){ return x.lineId === lineId; });
+  if(thisLine){
+    var siblingIds = allLines.filter(function(x){ return x.recordId === thisLine.recordId && x.lineId !== lineId; }).map(function(x){ return x.lineId; });
+    if(siblingIds.length > 0){
+      var applyToSiblings = confirm('같은 접수건에 함께 등록된 다른 회선(' + siblingIds.length + '건)에도 이 개통일을 동일하게 적용할까요?\n\n확인: 전체 회선에 일괄 적용\n취소: 이 회선만 적용');
+      if(applyToSiblings){
+        const { error: bulkErr } = await sb.from('record_lines').update({ open_date: val || null }).in('id', siblingIds);
+        if(bulkErr) showToast('일부 회선 일괄 적용 실패: ' + bulkErr.message);
+        await renderTable();
+      }
+    }
+  }
 }
 async function updateReceiptNo(lineId,val){
   if(!lineId||lineId==='null'){showToast('회선 정보가 없어 저장할 수 없습니다.');return;}
@@ -2082,6 +2103,9 @@ async function openDetail(idx){
       if(f.type==='select'){
         var opts=(f.options||[]).map(function(o){return `<option value="${o.v}" ${o.v===f.val?'selected':''}>${o.t}</option>`;}).join('');
         return `<div class="flex flex-col gap-1"><label class="text-[11px] font-semibold text-on-surface-variant uppercase">${f.label}</label><select id="${f.id}" class="w-full border border-border-subtle rounded px-2 py-1.5 text-body-sm outline-none focus:border-primary bg-surface-container-lowest">${opts}</select></div>`;
+      }
+      if(f.type==='date'){
+        return `<div class="flex flex-col gap-1"><label class="text-[11px] font-semibold text-on-surface-variant uppercase">${f.label}</label><div class="flex gap-2 items-center"><input type="date" id="${f.id}" value="${(f.val||'').toString().replace(/"/g,'&quot;')}" class="flex-1 border border-border-subtle rounded px-2 py-1.5 text-body-sm outline-none focus:border-primary bg-surface-container-lowest">${f.asapId?`<label class="flex items-center gap-1 text-[11px] whitespace-nowrap cursor-pointer"><input type="checkbox" id="${f.asapId}" ${f.asapChecked?'checked':''} class="w-4 h-4">최대한빠르게</label>`:''}</div></div>`;
       }
       return `<div class="flex flex-col gap-1"><label class="text-[11px] font-semibold text-on-surface-variant uppercase">${f.label}</label><input type="text" id="${f.id}" value="${(f.val||'').toString().replace(/"/g,'&quot;')}" class="w-full border border-border-subtle rounded px-2 py-1.5 text-body-sm outline-none focus:border-primary bg-surface-container-lowest"></div>`;
     }).join('');
@@ -2147,7 +2171,7 @@ async function openDetail(idx){
     ${buildSection('sec-code','코드 / 설치 정보',[
       {label:'영업점코드',id:'modal-branchcode',val:r.branchCode},
       {label:'설치점코드',id:'modal-installcode',val:r.installCode},
-      {label:'설치희망일',id:'modal-wishdate',val:r.wishdate}
+      {label:'설치희망일',id:'modal-wishdate',val:parseWishdateParts(r.wishdate).date,type:'date',asapId:'modal-wishdate-asap',asapChecked:parseWishdateParts(r.wishdate).asap}
     ])}
 
     <div class="font-label-caps text-label-caps text-tv-accent uppercase mb-2 border-t-2 border-primary/20 pt-3">이 회선 정보 — ${r.label||''} (직접 수정 가능)</div>
@@ -2345,7 +2369,20 @@ async function saveModal(){
   var ns = statusEl ? statusEl.value : r.status;
   var od = opendateEl ? opendateEl.value : (r.openDate||'');
   var nm = document.getElementById('modal-memo').value;
-  if(ns==='개통완료'&&!od) od=new Date().toISOString().slice(0,10);
+
+  var statusChanged = (ns !== r.status);
+  var openDateAutoFilled = false;
+  if(ns==='개통완료'&&!od){ od=new Date().toISOString().slice(0,10); openDateAutoFilled=true; }
+  var openDateChanged = (od !== (r.openDate||'')) || openDateAutoFilled;
+
+  // 상태 또는 개통일이 바뀌었으면, 같은 접수건(고객)의 다른 회선에도 일괄 적용할지 확인
+  var applyToSiblings = false;
+  if(statusChanged || openDateChanged){
+    var siblingCount = allLines.filter(function(x){ return x.recordId === r.recordId && x.lineId !== r.lineId; }).length;
+    if(siblingCount > 0){
+      applyToSiblings = confirm('같은 접수건에 함께 등록된 다른 회선(' + siblingCount + '건)에도 이 상태/개통일을 동일하게 적용할까요?\n\n확인: 전체 회선에 일괄 적용\n취소: 이 회선만 적용');
+    }
+  }
 
   // 회선(line) 단위 업데이트 — 상태/개통일은 항상 이 회선에만 적용
   var lineUpdate = { status: ns, openDate: od };
@@ -2372,6 +2409,15 @@ async function saveModal(){
   const { error: lineErr } = await sb.from('record_lines').update(lineToDb(lineUpdate)).eq('id', r.lineId);
   if(lineErr){ showToast('회선 정보 저장 실패: ' + lineErr.message); return; }
 
+  // 일괄 적용 선택 시 — 같은 접수건의 나머지 회선들에도 상태/개통일만 동일하게 반영 (다른 회선 고유값은 건드리지 않음)
+  if(applyToSiblings){
+    var siblingIds = allLines.filter(function(x){ return x.recordId === r.recordId && x.lineId !== r.lineId; }).map(function(x){ return x.lineId; });
+    if(siblingIds.length > 0){
+      const { error: bulkErr } = await sb.from('record_lines').update(lineToDb({ status: ns, openDate: od })).in('id', siblingIds);
+      if(bulkErr) showToast('일부 회선 일괄 적용 실패: ' + bulkErr.message);
+    }
+  }
+
   // 헤더(record) 단위 업데이트 — memo는 항상, 전체상세 모드면 나머지 헤더필드도 수집
   var headerUpdate = { memo: nm };
 
@@ -2393,7 +2439,9 @@ async function saveModal(){
     headerUpdate.payerBirth=g('modal-payerbirth');
     headerUpdate.branchCode=g('modal-branchcode');
     headerUpdate.installCode=g('modal-installcode');
-    headerUpdate.wishdate=g('modal-wishdate');
+    var wishdateVal = g('modal-wishdate');
+    var wishdateAsap = document.getElementById('modal-wishdate-asap') ? document.getElementById('modal-wishdate-asap').checked : false;
+    headerUpdate.wishdate = (wishdateVal||'') + (wishdateAsap ? ' 최대한빠르게' : '');
     headerUpdate.gift=g('modal-gift');
     headerUpdate.giftItem=g('modal-giftitem');
     headerUpdate.giftPhone=g('modal-giftphone');
