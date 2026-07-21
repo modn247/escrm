@@ -96,6 +96,7 @@
         <span class="material-symbols-outlined text-[18px]">account_circle</span>
         <span class="font-medium" id="header-user-name">—</span>
         <button onclick="location.href='approve.html'" id="goto-approve-btn" class="hidden ml-2 text-[12px] border border-border-subtle rounded px-3 py-1 hover:bg-surface-container-low transition-colors">가입 승인 관리</button>
+        <button onclick="location.href='settle-check.html'" id="goto-settle-btn" class="hidden ml-2 text-[12px] border border-border-subtle rounded px-3 py-1 hover:bg-surface-container-low transition-colors">정산 대조</button>
         <button onclick="location.href='change-password.html'" class="ml-2 text-[12px] border border-border-subtle rounded px-3 py-1 hover:bg-surface-container-low transition-colors">비밀번호 변경</button>
         <button onclick="handleLogout()" class="ml-2 text-[12px] border border-border-subtle rounded px-3 py-1 hover:bg-surface-container-low transition-colors">로그아웃</button>
       </div>
@@ -532,6 +533,7 @@ async function requireAuthAndInit(){
   document.getElementById('header-branch-name').textContent = currentUser.branchName || '전체 (본사)';
   if(['admin','staff'].includes(currentUser.role)){
     document.getElementById('goto-approve-btn').classList.remove('hidden');
+    document.getElementById('goto-settle-btn').classList.remove('hidden');
   }
 
   return true;
