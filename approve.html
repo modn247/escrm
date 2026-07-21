@@ -352,8 +352,9 @@ async function approveUser(userId){
 }
 
 async function rejectUser(userId){
-  if(!confirm('이 신청을 거절하시겠습니까?')) return;
+  if(!confirm('이 신청을 거절하시겠습니까?\n거절하면 해당 계정은 완전히 삭제되어, 이후 같은 아이디로 재가입이 가능해집니다.')) return;
 
+  // 1) 상태를 rejected로 표시 (Edge Function이 이 상태를 확인하고 삭제를 진행함)
   const { error } = await sb.from('users').update({ status: 'rejected' }).eq('id', userId);
 
   if(error){
@@ -361,7 +362,18 @@ async function rejectUser(userId){
     return;
   }
 
-  showToast('거절 처리되었습니다.');
+  // 2) 계정을 완전히 삭제 (auth.users + public.users 함께 삭제됨)
+  const { data, error: delError } = await sb.functions.invoke('delete-rejected-user', {
+    body: { targetUserId: userId }
+  });
+
+  if(delError || (data && data.error)){
+    showToast('거절 처리는 되었으나 계정 삭제에 실패했습니다: ' + (delError ? delError.message : data.error));
+    await loadPendingUsers();
+    return;
+  }
+
+  showToast('거절 처리 및 계정 삭제가 완료되었습니다.');
   await loadPendingUsers();
 }
 
