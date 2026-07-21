@@ -2344,12 +2344,39 @@ async function renderFilesList(recordId){
   if(error) return '<p class="text-error">파일 목록을 불러오지 못했습니다.</p>';
   if(!files || files.length===0) return '첨부된 파일이 없습니다.';
 
-  return files.map(function(f){
-    return `<div class="flex items-center justify-between py-1">
-      <span class="truncate">${f.file_name}</span>
-      <button onclick="downloadAttachedFile('${f.storage_path}','${f.file_name.replace(/'/g,"\\'")}')" class="text-primary text-[12px] font-semibold hover:underline whitespace-nowrap ml-2">다운로드</button>
+  var htmlParts = await Promise.all(files.map(async function(f){
+    var isImage = /\.(jpe?g|png|gif|webp)$/i.test(f.file_name);
+    var escapedName = f.file_name.replace(/'/g,"\\'");
+
+    if(isImage){
+      // 서명된 URL 발급 (1시간 유효) — 다운로드 없이 바로 미리보기 표시
+      const { data: signed, error: signErr } = await sb.storage.from('attachments').createSignedUrl(f.storage_path, 3600);
+      if(signErr || !signed){
+        return `<div class="py-2 border-b border-border-subtle last:border-0">
+          <div class="flex items-center justify-between mb-1">
+            <span class="truncate text-body-sm">${f.file_name}</span>
+            <button onclick="downloadAttachedFile('${f.storage_path}','${escapedName}')" class="text-primary text-[12px] font-semibold hover:underline whitespace-nowrap ml-2">다운로드</button>
+          </div>
+          <p class="text-[11px] text-error">미리보기를 불러오지 못했습니다.</p>
+        </div>`;
+      }
+      return `<div class="py-2 border-b border-border-subtle last:border-0">
+        <div class="flex items-center justify-between mb-2">
+          <span class="truncate text-body-sm">${f.file_name}</span>
+          <button onclick="downloadAttachedFile('${f.storage_path}','${escapedName}')" class="text-primary text-[12px] font-semibold hover:underline whitespace-nowrap ml-2">다운로드</button>
+        </div>
+        <img src="${signed.signedUrl}" alt="${escapedName}" class="max-w-full max-h-80 rounded-lg border border-border-subtle cursor-zoom-in" onclick="window.open('${signed.signedUrl}','_blank')">
+      </div>`;
+    }
+
+    // 이미지가 아니면 (PDF 등) 다운로드만 제공
+    return `<div class="flex items-center justify-between py-2 border-b border-border-subtle last:border-0">
+      <span class="truncate text-body-sm">${f.file_name}</span>
+      <button onclick="downloadAttachedFile('${f.storage_path}','${escapedName}')" class="text-primary text-[12px] font-semibold hover:underline whitespace-nowrap ml-2">다운로드</button>
     </div>`;
-  }).join('');
+  }));
+
+  return htmlParts.join('');
 }
 
 // 섹션 수정모드 토글
