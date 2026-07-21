@@ -2380,6 +2380,7 @@ async function renderFilesList(recordId){
   var htmlParts = await Promise.all(files.map(async function(f){
     var isImage = /\.(jpe?g|png|gif|webp)$/i.test(f.file_name);
     var escapedName = f.file_name.replace(/'/g,"\\'");
+    var deleteBtn = `<button onclick="deleteAttachedFile('${f.id}','${f.storage_path}','${recordId}')" class="text-error text-[12px] font-semibold hover:underline whitespace-nowrap ml-2">삭제</button>`;
 
     if(isImage){
       // 서명된 URL 발급 (1시간 유효) — 다운로드 없이 바로 미리보기 표시
@@ -2388,7 +2389,7 @@ async function renderFilesList(recordId){
         return `<div class="py-2 border-b border-border-subtle last:border-0">
           <div class="flex items-center justify-between mb-1">
             <span class="truncate text-body-sm">${f.file_name}</span>
-            <button onclick="downloadAttachedFile('${f.storage_path}','${escapedName}')" class="text-primary text-[12px] font-semibold hover:underline whitespace-nowrap ml-2">다운로드</button>
+            <div class="flex items-center shrink-0"><button onclick="downloadAttachedFile('${f.storage_path}','${escapedName}')" class="text-primary text-[12px] font-semibold hover:underline whitespace-nowrap">다운로드</button>${deleteBtn}</div>
           </div>
           <p class="text-[11px] text-error">미리보기를 불러오지 못했습니다.</p>
         </div>`;
@@ -2396,16 +2397,16 @@ async function renderFilesList(recordId){
       return `<div class="py-2 border-b border-border-subtle last:border-0">
         <div class="flex items-center justify-between mb-2">
           <span class="truncate text-body-sm">${f.file_name}</span>
-          <button onclick="downloadAttachedFile('${f.storage_path}','${escapedName}')" class="text-primary text-[12px] font-semibold hover:underline whitespace-nowrap ml-2">다운로드</button>
+          <div class="flex items-center shrink-0"><button onclick="downloadAttachedFile('${f.storage_path}','${escapedName}')" class="text-primary text-[12px] font-semibold hover:underline whitespace-nowrap">다운로드</button>${deleteBtn}</div>
         </div>
         <img src="${signed.signedUrl}" alt="${escapedName}" class="max-w-full max-h-80 rounded-lg border border-border-subtle cursor-zoom-in" onclick="window.open('${signed.signedUrl}','_blank')">
       </div>`;
     }
 
-    // 이미지가 아니면 (PDF 등) 다운로드만 제공
+    // 이미지가 아니면 (PDF 등) 다운로드+삭제만 제공
     return `<div class="flex items-center justify-between py-2 border-b border-border-subtle last:border-0">
       <span class="truncate text-body-sm">${f.file_name}</span>
-      <button onclick="downloadAttachedFile('${f.storage_path}','${escapedName}')" class="text-primary text-[12px] font-semibold hover:underline whitespace-nowrap ml-2">다운로드</button>
+      <div class="flex items-center shrink-0"><button onclick="downloadAttachedFile('${f.storage_path}','${escapedName}')" class="text-primary text-[12px] font-semibold hover:underline whitespace-nowrap">다운로드</button>${deleteBtn}</div>
     </div>`;
   }));
 
@@ -2429,6 +2430,20 @@ function toggleSectionEdit(sectionId){
     btn.innerHTML='<span class="material-symbols-outlined text-[14px]">lock</span> 잠금';
     window._editedSections[sectionId]=true;
   }
+}
+
+async function deleteAttachedFile(fileId, storagePath, recordId){
+  if(!confirm('이 파일을 삭제할까요? 삭제하면 복구할 수 없습니다.')) return;
+
+  const { error: storageErr } = await sb.storage.from('attachments').remove([storagePath]);
+  if(storageErr){ showToast('파일 삭제 실패: ' + storageErr.message); return; }
+
+  const { error: dbErr } = await sb.from('files').delete().eq('id', fileId);
+  if(dbErr){ showToast('파일 정보 삭제 실패: ' + dbErr.message); return; }
+
+  showToast('파일이 삭제되었습니다.');
+  var listEl = document.getElementById('modal-files-list');
+  if(listEl) listEl.innerHTML = await renderFilesList(recordId);
 }
 
 async function downloadAttachedFile(storagePath, fileName){
