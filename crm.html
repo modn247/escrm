@@ -669,7 +669,7 @@ async function uploadPendingFiles(recordId){
 
   for(var i=0;i<pendingFiles.length;i++){
     var file = pendingFiles[i];
-    var safeName = file.name.replace(/[^a-zA-Z0-9._\-가-힣]/g, '_');
+    var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     var storagePath = recordId + '/' + Date.now() + '_' + safeName;
 
     const { error: uploadErr } = await sb.storage.from('attachments').upload(storagePath, file, {
@@ -2367,7 +2367,7 @@ async function handleModalFileUpload(inputEl, recordId){
     if(file.size > 5*1024*1024){ failMessages.push(file.name+': 5MB 초과'); continue; }
 
     // 파일명에 Storage 경로로 쓰기 곤란한 문자(공백, 특수문자 등)가 섞여있으면 안전하게 치환
-    var safeName = file.name.replace(/[^a-zA-Z0-9._\-가-힣]/g, '_');
+    var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     var storagePath = recordId + '/' + Date.now() + '_' + safeName;
 
     const { error: uploadErr } = await sb.storage.from('attachments').upload(storagePath, file, {
