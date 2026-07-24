@@ -96,6 +96,7 @@
         <span class="material-symbols-outlined text-[18px]">account_circle</span>
         <span class="font-medium" id="header-user-name">—</span>
         <button onclick="location.href='approve.html'" id="goto-approve-btn" class="hidden ml-2 text-[12px] border border-border-subtle rounded px-3 py-1 hover:bg-surface-container-low transition-colors">가입 승인 관리</button>
+        <button onclick="location.href='branch-manage.html'" id="goto-branch-btn" class="hidden ml-2 text-[12px] border border-border-subtle rounded px-3 py-1 hover:bg-surface-container-low transition-colors">영업점 관리</button>
         <button onclick="location.href='settle-check.html'" id="goto-settle-btn" class="hidden ml-2 text-[12px] border border-border-subtle rounded px-3 py-1 hover:bg-surface-container-low transition-colors">정산 대조</button>
         <button onclick="location.href='change-password.html'" class="ml-2 text-[12px] border border-border-subtle rounded px-3 py-1 hover:bg-surface-container-low transition-colors">비밀번호 변경</button>
         <button onclick="handleLogout()" class="ml-2 text-[12px] border border-border-subtle rounded px-3 py-1 hover:bg-surface-container-low transition-colors">로그아웃</button>
@@ -533,6 +534,7 @@ async function requireAuthAndInit(){
   document.getElementById('header-branch-name').textContent = currentUser.branchName || '전체 (본사)';
   if(['admin','staff'].includes(currentUser.role)){
     document.getElementById('goto-approve-btn').classList.remove('hidden');
+    document.getElementById('goto-branch-btn').classList.remove('hidden');
     document.getElementById('goto-settle-btn').classList.remove('hidden');
   }
 
@@ -1316,7 +1318,7 @@ function parseInput(){
   else unresolved.push('주소');
 
   // ── 납부 정보 파싱 ──
-  var payRaw=getVal(['자동이체','계좌이체','카드납부','지로납부','청구계좌','납부계좌','납부','이체','카드']);
+  var payRaw=getVal(['자동이체','계좌이체','카드납부','지로납부','청구계좌','납부계좌','입금계좌','입금 계좌','납부','이체','카드']);
   if(payRaw){
     var payMethod=detectPayMethod(payRaw)||'계좌이체'; // 청구계좌 등 계좌정보면 기본 계좌이체
     if(payMethod){
@@ -1373,7 +1375,7 @@ function parseInput(){
 
   // ── 사은품 계좌 ──
   // '사은품 계좌 :' 키워드 우선, 없으면 '사은품 :' 라인에 / 있으면 계좌로 처리
-  var giftMainLine=getVal(['사은품','현금사은품']);
+  var giftMainLine=getVal(['사은품','현금사은품','지원']);
   var gRaw=getVal(['사은품 계좌','사은품계좌','지급계좌','수령계좌']);
   if(!gRaw && giftMainLine && giftMainLine.indexOf('/')>=0) gRaw=giftMainLine;
   if(gRaw){
@@ -1549,6 +1551,13 @@ function parseInput(){
       var mp2=dateOnly.split('/');
       parsedDate=yr2+'-'+mp2[0].padStart(2,'0')+'-'+mp2[1].padStart(2,'0');
     }
+    else if(dateOnly.match(/^\d{4}$/)){
+      // MMDD 4자리 (예: 0728 → 7월 28일), 연도는 현재 연도 기준
+      var mm4=dateOnly.slice(0,2), dd4=dateOnly.slice(2,4);
+      if(Number(mm4)>=1&&Number(mm4)<=12&&Number(dd4)>=1&&Number(dd4)<=31){
+        parsedDate=new Date().getFullYear()+'-'+mm4+'-'+dd4;
+      }
+    }
     if(parsedDate){
       document.getElementById('f-wishdate').value=parsedDate;
       filled.push('설치희망일('+parsedDate+')');
@@ -1575,9 +1584,9 @@ function parseInput(){
     '연락처','전화','핸드폰','휴대폰','phone','tel','번호',
     '주민번호','주민','생년월일','등록번호',
     '주소','address','설치주소','설치 주소',
-    '자동이체','계좌이체','카드납부','지로납부','납부','이체','카드',
+    '자동이체','계좌이체','카드납부','지로납부','납부','이체','카드','입금계좌','입금 계좌',
     '사은품 계좌','사은품계좌','지급계좌','수령계좌','청구계좌','납부계좌',
-    '사은품','현금사은품','사은품수령번호','사은품 수령번호',
+    '사은품','현금사은품','지원','사은품수령번호','사은품 수령번호',
     'oss','상품','product','가입상품',
     '인증방법','본인인증','면허번호','설치비','기존통신사','아파트','설치희망일','희망일','청구지주소','월요금','요금','월 요금'
   ];
