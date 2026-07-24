@@ -60,6 +60,7 @@ select.role-select{border:1px solid #cdd2df;border-radius:5px;padding:6px 8px;fo
     <div class="user-info">
       <span id="me-name"></span>
       <button onclick="location.href='crm.html'">접수 페이지로</button>
+      <button onclick="location.href='branch-manage.html'">영업점 관리</button>
       <button onclick="location.href='change-password.html'">비밀번호 변경</button>
       <button onclick="handleLogout()">로그아웃</button>
     </div>
@@ -173,11 +174,16 @@ async function loadPendingUsers(){
       const isMatch = b.branch_name === u.requested_branch_name;
       return '<option value="'+b.id+'" '+(isMatch?'selected':'')+'>'+b.branch_name+'</option>';
     }).join('');
+    const hasMatch = branchList.some(function(b){ return b.branch_name === u.requested_branch_name; });
     const branchSelectHtml =
-      '<select class="role-select" id="branch-sel-'+u.id+'">' +
+      '<select class="role-select" id="branch-sel-'+u.id+'" onchange="onBranchSelectChange(\''+u.id+'\')">' +
         branchOptions +
-        '<option value="__new__">+ 신규 영업점 등록 ('+ (u.requested_branch_name||'미입력') +')</option>' +
-      '</select>';
+        '<option value="__new__" '+(hasMatch?'':'selected')+'>+ 신규 영업점 등록 ('+ (u.requested_branch_name||'미입력') +')</option>' +
+      '</select>' +
+      '<div id="new-branch-fields-'+u.id+'" style="display:'+(hasMatch?'none':'flex')+';margin-top:6px;gap:6px">' +
+        '<input type="text" id="new-branch-name-'+u.id+'" placeholder="영업점명" value="'+(u.requested_branch_name||'').replace(/"/g,'&quot;')+'" style="width:100px;padding:5px 8px;border:1px solid #cdd2df;border-radius:4px;font-size:12px">' +
+        '<input type="text" id="new-branch-code-'+u.id+'" placeholder="코드(필수)" style="width:80px;padding:5px 8px;border:1px solid #cdd2df;border-radius:4px;font-size:12px">' +
+      '</div>';
 
     return '<div class="card" id="card-'+u.id+'">' +
       '<div class="card-row">' +
@@ -206,6 +212,12 @@ function onRoleSelectChange(userId){
   const roleSel = document.getElementById('role-sel-'+userId);
   const branchWrap = document.getElementById('branch-wrap-'+userId);
   branchWrap.style.display = roleSel.value === 'branch' ? '' : 'none';
+}
+
+function onBranchSelectChange(userId){
+  const sel = document.getElementById('branch-sel-'+userId);
+  const fields = document.getElementById('new-branch-fields-'+userId);
+  if(fields) fields.style.display = (sel.value === '__new__') ? 'flex' : 'none';
 }
 
 async function loadRecentApproved(){
@@ -311,15 +323,21 @@ async function approveUser(userId){
     const val = sel ? sel.value : null;
 
     if(val === '__new__'){
-      const { data: userRow } = await sb.from('users').select('requested_branch_name').eq('id', userId).single();
-      const newBranchName = userRow ? userRow.requested_branch_name : null;
+      const nameInput = document.getElementById('new-branch-name-'+userId);
+      const codeInput = document.getElementById('new-branch-code-'+userId);
+      const newBranchName = nameInput ? nameInput.value.trim() : '';
+      const newBranchCode = codeInput ? codeInput.value.trim() : '';
+
       if(!newBranchName){
-        showToast('영업점명이 없어 신규 등록할 수 없습니다.');
+        showToast('영업점명을 입력해주세요.');
         return;
       }
-      const branchCode = String(Date.now()).slice(-6);
+      if(!newBranchCode){
+        showToast('영업점 코드를 입력해주세요. (본사 유치팀 코드 기준)');
+        return;
+      }
       const { data: newBranch, error: newBranchErr } = await sb.from('branches')
-        .insert({ branch_code: branchCode, branch_name: newBranchName })
+        .insert({ branch_code: newBranchCode, branch_name: newBranchName })
         .select('id')
         .single();
       if(newBranchErr){
