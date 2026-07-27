@@ -188,6 +188,26 @@
               <option value="N">N</option><option value="Y">Y</option>
             </select>
           </div>
+          <div class="flex flex-col gap-1">
+            <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">원스톱</label>
+            <select id="f-onestop" onchange="toggleOnestopCarrier()" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all bg-surface-container-lowest">
+              <option value="N">N</option><option value="Y">Y</option>
+            </select>
+          </div>
+        </div>
+        <div id="onestop-wrap" class="hidden grid grid-cols-1 md:grid-cols-3 gap-6 mt-4 pt-4 border-t border-border-subtle">
+          <div class="flex flex-col gap-1">
+            <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">기존 통신사</label>
+            <select id="f-existing-carrier" onchange="toggleExistingCarrierEtc()" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all bg-surface-container-lowest">
+              <option value="">선택</option>
+              <option>KT</option><option>SKT</option><option>LG유플러스</option>
+              <option>SK브로드밴드</option><option>KT스카이라이프</option><option>기타</option>
+            </select>
+          </div>
+          <div id="existing-carrier-etc-wrap" class="hidden flex flex-col gap-1">
+            <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">기존 통신사 (직접입력)</label>
+            <input type="text" id="f-existing-carrier-etc" placeholder="예: 세종텔레콤" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all"/>
+          </div>
         </div>
         <div id="oss-term-wrap" class="hidden grid grid-cols-1 md:grid-cols-3 gap-6 mt-4 pt-4 border-t border-border-subtle">
           <div class="flex flex-col gap-1">
@@ -577,7 +597,8 @@ const TV_ADD=[
   '베이직','ALL','포인트','초이스',
   '30% 베이직','30% ALL','30% 포인트','30% 초이스',
   'IPTV 베이직','IPTV 플러스',
-  '30% IPTV 베이직','30% IPTV 플러스'
+  '30% IPTV 베이직','30% IPTV 플러스',
+  '2nd TV'
 ];
 const CONTRACT=['무약정','1년','2년','3년','5년'];
 function so(arr,blank){return'<option value="">'+(blank||'선택')+'</option>'+arr.map(o=>'<option>'+o+'</option>').join('');}
@@ -926,6 +947,19 @@ function toggleOssTerm(){
   var wrap=document.getElementById('oss-term-wrap');
   if(v==='Y'){wrap.classList.remove('hidden');}
   else{wrap.classList.add('hidden');}
+}
+// 원스톱 여부에 따른 기존통신사 입력칸 토글
+function toggleOnestopCarrier(){
+  var v=document.getElementById('f-onestop').value;
+  var wrap=document.getElementById('onestop-wrap');
+  if(v==='Y'){wrap.classList.remove('hidden');}
+  else{wrap.classList.add('hidden');document.getElementById('f-existing-carrier').value='';document.getElementById('f-existing-carrier-etc').value='';}
+}
+function toggleExistingCarrierEtc(){
+  var v=document.getElementById('f-existing-carrier').value;
+  var wrap=document.getElementById('existing-carrier-etc-wrap');
+  if(v==='기타'){wrap.classList.remove('hidden');}
+  else{wrap.classList.add('hidden');document.getElementById('f-existing-carrier-etc').value='';}
 }
 // 익일해지 체크 시 날짜칸 비활성화
 function toggleOssAsap(){
@@ -1534,6 +1568,24 @@ function parseInput(){
     filled.push('OSS');
   }
 
+  // ── 원스톱 / 기존통신사 ──
+  var existingCarrierRaw=getVal(['기존통신사','기존 통신사','원스톱']);
+  if(existingCarrierRaw){
+    document.getElementById('f-onestop').value='Y';
+    toggleOnestopCarrier();
+    var ecClean=existingCarrierRaw.trim();
+    var carrierOpts=['KT','SKT','LG유플러스','SK브로드밴드','KT스카이라이프'];
+    var ecMatched=carrierOpts.find(function(c){return ecClean.toUpperCase().indexOf(c.toUpperCase())>=0 || ecClean.replace(/\s/g,'').indexOf(c.replace(/\s/g,''))>=0;});
+    if(ecMatched){
+      document.getElementById('f-existing-carrier').value=ecMatched;
+    } else if(ecClean && ecClean!=='원스톱'){
+      document.getElementById('f-existing-carrier').value='기타';
+      toggleExistingCarrierEtc();
+      document.getElementById('f-existing-carrier-etc').value=ecClean;
+    }
+    filled.push('원스톱/기존통신사');
+  }
+
   // ── 설치희망일 ──
   var wishRaw=getVal(['설치희망일','희망일','설치희망','희망설치일']);
   if(wishRaw){
@@ -1588,7 +1640,7 @@ function parseInput(){
     '사은품 계좌','사은품계좌','지급계좌','수령계좌','청구계좌','납부계좌',
     '사은품','현금사은품','지원','사은품수령번호','사은품 수령번호',
     'oss','상품','product','가입상품',
-    '인증방법','본인인증','면허번호','설치비','기존통신사','아파트','설치희망일','희망일','청구지주소','월요금','요금','월 요금'
+    '인증방법','본인인증','면허번호','설치비','기존통신사','원스톱','아파트','설치희망일','희망일','청구지주소','월요금','요금','월 요금'
   ];
   // 콜론 포함 라인 전체 수집
   var colonLines=lines.filter(function(l){return l.match(/[:：]/);});
@@ -1700,6 +1752,7 @@ function dbToRecord(row){
     id: row.id, no: row.no, name: row.name, phone: row.phone,
     ssn: row.ssn, addr: row.addr, apt: row.apt,
     oss: row.oss, ossAsap: row.oss_asap, ossTermDate: row.oss_term_date,
+    onestop: row.onestop, existingCarrier: row.existing_carrier,
     authType: row.auth_type, authValue: row.auth_value,
     paymethod: row.pay_method, bank: row.bank, acct: row.acct,
     payer: row.payer, relation: row.relation, payerBirth: row.payer_birth,
@@ -1722,6 +1775,8 @@ function recordToDb(rec){
   if('oss' in rec) out.oss = rec.oss;
   if('ossAsap' in rec) out.oss_asap = rec.ossAsap;
   if('ossTermDate' in rec) out.oss_term_date = rec.ossTermDate || null;
+  if('onestop' in rec) out.onestop = rec.onestop;
+  if('existingCarrier' in rec) out.existing_carrier = rec.existingCarrier || null;
   if('authType' in rec) out.auth_type = rec.authType;
   if('authValue' in rec) out.auth_value = rec.authValue;
   if('paymethod' in rec) out.pay_method = rec.paymethod;
@@ -1989,6 +2044,8 @@ async function submitForm(){
     oss:document.getElementById('f-oss').value,
     ossAsap:document.getElementById('f-oss').value==='Y'?document.getElementById('f-oss-asap').checked:false,
     ossTermDate:document.getElementById('f-oss').value==='Y'?document.getElementById('f-oss-termdate').value:'',
+    onestop:document.getElementById('f-onestop').value,
+    existingCarrier:document.getElementById('f-onestop').value==='Y'?(document.getElementById('f-existing-carrier').value==='기타'?document.getElementById('f-existing-carrier-etc').value.trim():document.getElementById('f-existing-carrier').value):'',
     authType:document.getElementById('f-auth-type').value,
     authValue:document.getElementById('f-auth-value').value.trim(),
     paymethod:document.getElementById('f-paymethod').value,
@@ -2279,6 +2336,8 @@ async function openDetail(idx){
       {label:'주소',id:'modal-addr',val:r.addr},
       {label:'아파트여부',id:'modal-apt',val:r.apt,type:'select',options:[{v:'N',t:'N'},{v:'Y',t:'Y'}]},
       {label:'OSS',id:'modal-oss',val:r.oss,type:'select',options:[{v:'N',t:'N'},{v:'Y',t:'Y'}]},
+      {label:'원스톱',id:'modal-onestop',val:r.onestop,type:'select',options:[{v:'N',t:'N'},{v:'Y',t:'Y'}]},
+      {label:'기존통신사',id:'modal-existingcarrier',val:r.existingCarrier},
       {label:'본인인증 유형',id:'modal-authtype',val:r.authType,type:'select',options:[{v:'신분증',t:'신분증'},{v:'주민등록증',t:'주민등록증'},{v:'운전면허증',t:'운전면허증'}]},
       {label:'본인인증 값',id:'modal-authvalue',val:r.authValue}
     ])}
@@ -2525,6 +2584,7 @@ function copyForKakao(recordId){
   if(r.giftPhone) lines.push('사은품수령번호 : '+r.giftPhone);
   if(r.authType) lines.push('인증방법 : '+r.authType+(r.authValue?('/'+r.authValue):''));
   lines.push('OSS : '+(r.oss||'N')+(r.oss==='Y'?(' ('+(r.ossAsap?'설치 후 익일해지':('해지요청일 '+(r.ossTermDate||'미기입')))+')'):''));
+  if(r.onestop==='Y') lines.push('원스톱 : Y (기존통신사 : '+(r.existingCarrier||'미기입')+')');
   lines.push('아파트 : '+(r.apt||'N'));
   lines.push('설치희망일 : '+(r.wishdate||''));
   lines_of_record.forEach(function(ld){
@@ -2668,6 +2728,8 @@ async function saveModal(){
     headerUpdate.addr=g('modal-addr');
     headerUpdate.apt=g('modal-apt');
     headerUpdate.oss=g('modal-oss');
+    headerUpdate.onestop=g('modal-onestop');
+    headerUpdate.existingCarrier=g('modal-existingcarrier');
     headerUpdate.authType=g('modal-authtype');
     headerUpdate.authValue=g('modal-authvalue');
     headerUpdate.paymethod=g('modal-paymethod');
