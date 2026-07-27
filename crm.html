@@ -598,7 +598,7 @@ const TV_ADD=[
   '30% 베이직','30% ALL','30% 포인트','30% 초이스',
   'IPTV 베이직','IPTV 플러스',
   '30% IPTV 베이직','30% IPTV 플러스',
-  '2nd TV'
+  '2nd TV','IPTV 2nd TV'
 ];
 const CONTRACT=['무약정','1년','2년','3년','5년'];
 function so(arr,blank){return'<option value="">'+(blank||'선택')+'</option>'+arr.map(o=>'<option>'+o+'</option>').join('');}
@@ -1842,6 +1842,7 @@ function lineToDb(line){
 
 var recordsById = {};  // { recordId: record헤더 } — 캐시
 var allLines = [];     // 리스트/엑셀에서 쓰는 "회선 단위로 펼쳐진" 배열. 각 항목은 line + 부모 record 정보 병합
+var expandedGroups = {}; // { recordId: true } — 고객단위 압축 리스트에서 펼쳐진 상태 기억
 
 async function fetchRecords(){
   // records + record_lines를 한 번에 조인해서 가져온 뒤, 회선단위로 펼침
@@ -2203,10 +2204,11 @@ async function renderTable(){
   if(to)data=data.filter(r=>r.date<=to);
   if(st)data=data.filter(r=>r.status===st);
   curRecs=data;
-  var tbody=document.getElementById('tbl-body'), empty=document.getElementById('empty-state');
-  if(!data.length){tbody.innerHTML=''; empty.classList.remove('hidden'); return;}
-  empty.classList.add('hidden');
-  tbody.innerHTML=data.map((r,i)=>`
+  renderRows();
+}
+
+function singleRowHtml(r,i){
+  return `
     <tr class="hover:bg-surface-muted transition-colors">
       <td class="px-3 py-3" onclick="event.stopPropagation()">
         <input type="text" value="${r.receiptNo||''}" placeholder="접수번호" onchange="updateReceiptNo('${r.lineId}',this.value)"
@@ -2236,7 +2238,149 @@ async function renderTable(){
           상세보기
         </button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+}
+
+function summaryRowHtml(lines, recId, expanded, firstIdx){
+  var r = lines[0];
+  var statuses = lines.map(function(l){return l.status;});
+  var allSameStatus = statuses.every(function(s){return s===statuses[0];});
+  var statusHtml = allSameStatus
+    ? `<span class="px-2 py-1 rounded-full text-[10px] font-bold tracking-wide ${BADGE_MAP[statuses[0]]||'bg-surface-variant text-on-surface'}">${statuses[0]}</span>`
+    : `<span class="px-2 py-1 rounded-full text-[10px] font-bold tracking-wide bg-surface-variant text-on-surface">상태 혼합</span>`;
+  return `
+    <tr class="hover:bg-surface-muted transition-colors bg-surface-container-low/40">
+      <td class="px-3 py-3" onclick="event.stopPropagation()">
+        <button onclick="toggleGroupExpand('${recId}')" class="text-[11px] font-semibold text-primary flex items-center gap-1 whitespace-nowrap">
+          <span class="material-symbols-outlined text-[16px]">${expanded?'expand_less':'expand_more'}</span>${expanded?'접기':'펼치기'} (${lines.length}건)
+        </button>
+      </td>
+      <td class="px-3 py-3" onclick="event.stopPropagation()">
+        <button onclick="openBulkEntry('${recId}')" class="bg-secondary/10 text-secondary hover:bg-secondary/20 transition-colors rounded px-3 py-1 text-[11px] font-semibold whitespace-nowrap flex items-center gap-1">
+          <span class="material-symbols-outlined text-[14px]">edit_note</span> 접수/계약번호 일괄입력
+        </button>
+      </td>
+      <td class="px-3 py-3 font-semibold cursor-pointer" onclick="openDetail(${firstIdx})">${r.name}</td>
+      <td class="px-3 py-3 text-on-surface-variant text-[12px]">${ssn6(r.ssn||'')}</td>
+      <td class="px-3 py-3 text-on-surface-variant text-[12px]">${r.phone}</td>
+      <td class="px-3 py-3 text-on-surface-variant text-[12px]">${r.date}</td>
+      <td class="px-3 py-3 text-on-surface-variant text-[12px]">${r.wishdate||'—'}</td>
+      <td class="px-3 py-3 text-[12px] text-on-surface-variant">—</td>
+      <td class="px-3 py-3 text-[12px] max-w-[160px] truncate cursor-pointer" title="${r.product||''}" onclick="openDetail(${firstIdx})">
+        <span class="text-[10px] font-bold text-on-surface-variant mr-1">${lines.length}개 상품</span>${r.product||'—'}
+      </td>
+      <td class="px-3 py-3 text-center cursor-pointer" onclick="openDetail(${firstIdx})">${statusHtml}</td>
+      <td class="px-3 py-3">
+        <button onclick="openDetail(${firstIdx})" class="bg-primary/10 text-primary hover:bg-primary/20 transition-colors rounded px-3 py-1 text-[11px] font-semibold whitespace-nowrap">
+          상세보기
+        </button>
+      </td>
+    </tr>`;
+}
+
+function renderRows(){
+  var data=curRecs;
+  var tbody=document.getElementById('tbl-body'), empty=document.getElementById('empty-state');
+  if(!data.length){tbody.innerHTML=''; empty.classList.remove('hidden'); return;}
+  empty.classList.add('hidden');
+
+  // recordId별 그룹핑 (data에 등장하는 순서 그대로 유지)
+  var groupOrder=[]; var groupMap={};
+  data.forEach(function(r){
+    if(!groupMap[r.recordId]){ groupMap[r.recordId]=[]; groupOrder.push(r.recordId); }
+    groupMap[r.recordId].push(r);
+  });
+
+  var html='';
+  groupOrder.forEach(function(recId){
+    var lines=groupMap[recId];
+    var firstIdx=data.indexOf(lines[0]);
+    if(lines.length===1){
+      html += singleRowHtml(lines[0], firstIdx);
+    } else {
+      var expanded=!!expandedGroups[recId];
+      html += summaryRowHtml(lines, recId, expanded, firstIdx);
+      if(expanded){
+        lines.forEach(function(ld){ html += singleRowHtml(ld, data.indexOf(ld)); });
+      }
+    }
+  });
+  tbody.innerHTML=html;
+}
+
+function toggleGroupExpand(recId){
+  expandedGroups[recId] = !expandedGroups[recId];
+  renderRows();
+}
+
+// 고객 1명의 전체 회선(상품)을 한 화면에 모아 접수번호/계약번호를 한 번에 입력
+function openBulkEntry(recId){
+  var lines = allLines.filter(function(x){ return x.recordId === recId; });
+  if(!lines.length){ showToast('회선 정보를 찾을 수 없습니다.'); return; }
+  var r = lines[0];
+
+  document.getElementById('modal-title').textContent = r.name+' 님 — 접수/계약번호 일괄입력';
+  document.getElementById('modal-body').innerHTML = `
+    <p class="text-[12px] text-on-surface-variant mb-4">이번에 접수 완료되어 발급된 접수번호/가입계약번호를 상품별로 입력하고 한 번에 저장하세요.</p>
+    <div class="space-y-3">
+      ${lines.map(function(ld, idx){
+        return `<div class="border border-border-subtle rounded-lg p-3 bg-surface-muted">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-[10px] font-bold ${ld.kind==='tv'?'text-tv-accent':'text-internet-accent'}">${ld.label||''}</span>
+            <span class="text-body-sm font-semibold">${ld.prod||'(미입력)'}</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${BADGE_MAP[ld.status]||'bg-surface-variant text-on-surface'} ml-auto">${ld.status}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1">
+              <label class="text-[11px] font-semibold text-on-surface-variant uppercase">접수번호</label>
+              <input type="text" id="bulk-receipt-${ld.lineId}" value="${(ld.receiptNo||'').replace(/"/g,'&quot;')}" class="w-full border border-border-subtle rounded px-2 py-1.5 text-body-sm outline-none focus:border-primary bg-surface-container-lowest">
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-[11px] font-semibold text-on-surface-variant uppercase">가입계약번호</label>
+              <input type="text" id="bulk-contract-${ld.lineId}" value="${(ld.contractNo||'').replace(/"/g,'&quot;')}" class="w-full border border-border-subtle rounded px-2 py-1.5 text-body-sm outline-none focus:border-primary bg-surface-container-lowest">
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="flex justify-end gap-2 mt-5">
+      <button onclick="closeModal()" class="px-4 py-2 rounded-lg border border-border-subtle text-body-sm font-medium hover:bg-surface-container-low transition-colors">취소</button>
+      <button onclick="saveBulkEntry('${recId}')" class="px-5 py-2 rounded-lg bg-primary text-on-primary font-medium hover:bg-on-primary-fixed-variant transition-colors flex items-center gap-2">
+        <span class="material-symbols-outlined text-[18px]">check</span> 전체 저장
+      </button>
+    </div>
+  `;
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.getElementById('modal-overlay').classList.add('flex');
+}
+
+async function saveBulkEntry(recId){
+  var lines = allLines.filter(function(x){ return x.recordId === recId; });
+  var updates = lines.map(function(ld){
+    var receiptEl = document.getElementById('bulk-receipt-'+ld.lineId);
+    var contractEl = document.getElementById('bulk-contract-'+ld.lineId);
+    return {
+      lineId: ld.lineId,
+      receiptNo: receiptEl ? receiptEl.value.trim() : ld.receiptNo,
+      contractNo: contractEl ? contractEl.value.trim() : ld.contractNo
+    };
+  });
+
+  var errors = [];
+  for(var i=0;i<updates.length;i++){
+    var u = updates[i];
+    if(!u.lineId) continue;
+    const { error } = await sb.from('record_lines').update({ receipt_no: u.receiptNo, contract_no: u.contractNo }).eq('id', u.lineId);
+    if(error) errors.push(error.message);
+  }
+
+  if(errors.length){
+    showToast('일부 저장 실패: ' + errors.join(', '));
+  } else {
+    showToast('전체 저장되었습니다.');
+  }
+  closeModal();
+  await renderTable();
 }
 async function updateOpenDate(lineId,val){
   if(!lineId||lineId==='null'){showToast('회선 정보가 없어 저장할 수 없습니다.');return;}
