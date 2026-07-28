@@ -2717,10 +2717,11 @@ function copyForKakao(recordId){
   lines.push('주민번호 : '+(r.ssn||''));
   lines.push('주소 : '+(r.addr||''));
   if(r.paymethod==='카드납부'){
-    lines.push('카드납부 : '+(r.bank||'')+'/'+(r.relation||'')+'/'+(r.acct||''));
+    lines.push('카드납부 : '+(r.bank||'')+'/'+(r.payer||'')+'/'+(r.acct||''));
   } else {
-    lines.push('자동이체 : '+(r.bank||'')+'/'+(r.relation||'')+'/'+(r.acct||''));
+    lines.push('자동이체 : '+(r.bank||'')+'/'+(r.payer||'')+'/'+(r.acct||''));
   }
+  if(r.relation&&r.relation!=='본인') lines.push('예금주와의 관계 : '+r.relation);
   if(r.relation&&r.relation!=='본인'&&r.payerBirth) lines.push('예금주 생년월일 : '+r.payerBirth);
   lines.push('사은품 계좌 : '+(r.gbank===r.bank&&r.gacct===r.acct?'상동':((r.gbank||'')+'/'+(r.gpayer||'')+'/'+(r.gacct||''))));
   var giftParts=[];
