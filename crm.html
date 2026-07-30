@@ -1378,9 +1378,14 @@ function parseInput(){
         var rsel=document.getElementById('f-relation');
         var rmap={'본인':'본인','배우자':'배우자','가족':'가족'};
         var rval=rmap[relation];
-        if(rval){for(var ri=0;ri<rsel.options.length;ri++){if(rsel.options[ri].value===rval){rsel.selectedIndex=ri;break;}}}
-        if(relation==='본인'&&name){document.getElementById('f-payer').value=name;filled.push('예금주(자동)');}
-        else if(relation&&relation!=='본인') document.getElementById('f-payer').value=relation;
+        if(rval){
+          for(var ri=0;ri<rsel.options.length;ri++){if(rsel.options[ri].value===rval){rsel.selectedIndex=ri;break;}}
+          if(relation==='본인'&&name){document.getElementById('f-payer').value=name;filled.push('예금주(자동)');}
+          // relation이 키워드(배우자/가족) 자체면 실제 이름 정보가 없는 것 — 여기서는 채우지 않고, 아래 "예금주" 키로 보완
+        } else {
+          // 슬래시 가운데 칸이 관계 키워드가 아니면 실제 이름이 적힌 것으로 간주
+          document.getElementById('f-payer').value=relation;
+        }
       }
       if(acctNum) document.getElementById('f-acct').value=acctNum;
       filled.push('납부계좌');
@@ -1406,6 +1411,18 @@ function parseInput(){
         document.getElementById('f-payer').value=payerNameMatch[1];
         filled.push('예금주');
       }
+    }
+  }
+
+  // ── 예금주 (관계가 본인이 아닐 때 실제 이름을 확실히 반영하기 위한 독립 키) ──
+  var payerExplicit=getVal(['예금주','납부자명','납부자']);
+  if(payerExplicit){
+    var pe=payerExplicit.trim();
+    // 계좌정보 등과 오매칭되는 것만 배제 (숫자/슬래시 포함시 이름이 아닌 다른 값일 가능성 높음)
+    // 한글/영문(외국인 고객) 이름 모두 허용
+    if(/^[가-힣a-zA-Z\s.]{2,25}$/.test(pe) && !/\d/.test(pe)){
+      document.getElementById('f-payer').value=pe;
+      filled.push('예금주');
     }
   }
 
@@ -2129,10 +2146,11 @@ async function sendTelegramNotification(recordId, headerRec, lines){
   msgLines.push('주민번호 : ' + (headerRec.ssn||''));
   msgLines.push('주소 : ' + (headerRec.addr||''));
   if(headerRec.paymethod==='카드납부'){
-    msgLines.push('카드납부 : ' + (headerRec.bank||'') + '/' + (headerRec.relation||'') + '/' + (headerRec.acct||''));
+    msgLines.push('카드납부 : ' + (headerRec.bank||'') + '/' + (headerRec.payer||'') + '/' + (headerRec.acct||''));
   } else {
-    msgLines.push('자동이체 : ' + (headerRec.bank||'') + '/' + (headerRec.relation||'') + '/' + (headerRec.acct||''));
+    msgLines.push('자동이체 : ' + (headerRec.bank||'') + '/' + (headerRec.payer||'') + '/' + (headerRec.acct||''));
   }
+  if(headerRec.relation&&headerRec.relation!=='본인') msgLines.push('예금주와의 관계 : ' + headerRec.relation);
   msgLines.push('사은품 계좌 : ' + (headerRec.gbank===headerRec.bank&&headerRec.gacct===headerRec.acct?'상동':((headerRec.gbank||'')+'/'+(headerRec.gpayer||'')+'/'+(headerRec.gacct||''))));
   var giftParts=[];
   if(headerRec.gift) giftParts.push('현금'+(parseInt(headerRec.gift)/10000)+'');
@@ -2913,13 +2931,15 @@ function closeModalOut(e){if(e.target===document.getElementById('modal-overlay')
 
 function exportExcel(){
   var data=curRecs.length?curRecs:allLines;
-  var h=['접수번호','가입계약번호','고객명','연락처','회선구분','상품명','약정','접수일','설치희망일','개통일','상태','설치비감액쿠폰','요금할인쿠폰(월)'];
+  var h=['영업점코드','설치점코드','접수번호','가입계약번호','고객명','연락처','회선구분','상품명','약정','접수일','설치희망일','개통일','상태','설치비감액쿠폰','요금할인쿠폰(월)','현금사은품','현물사은품','대납여부'];
   var rows=data.map(r=>[
+    r.branchCode||'', r.installCode||'',
     r.receiptNo||'', r.contractNo||'', r.name, r.phone,
     r.label||'', r.prod||'', r.contractPeriod||'',
     r.date, r.wishdate||'', r.openDate||'', r.status,
     (r.installCoupon&&r.installCoupon.checked)?(r.installCoupon.amt||''):'',
-    (r.rateCoupon&&r.rateCoupon.checked)?(r.rateCoupon.amt||''):''
+    (r.rateCoupon&&r.rateCoupon.checked)?(r.rateCoupon.amt||''):'',
+    r.gift||'', r.giftItem||'', r.giftDaenap?'대납':''
   ]);
   var csv=[h].concat(rows).map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
