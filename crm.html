@@ -2760,6 +2760,7 @@ function copyForKakao(recordId){
   });
   if(r.priceBefore) lines.push('할인 전 총 요금 : '+Number(r.priceBefore).toLocaleString()+'원');
   if(r.priceAfter) lines.push('할인 후 총 요금 : '+Number(r.priceAfter).toLocaleString()+'원');
+  if(r.memo) lines.push('비고 : '+r.memo);
   var text=lines.join('\n');
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(text).then(function(){
