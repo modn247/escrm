@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>가입 승인 관리 — 스카이라이프 영업점 CRM</title>
+<title>가입 승인 관리 — 이에스 영업점 CRM</title>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -56,7 +56,7 @@ select.role-select{border:1px solid #cdd2df;border-radius:5px;padding:6px 8px;fo
 
 <div id="main-view" class="hidden">
   <header class="app-header">
-    <h1><span class="logo-badge">SKYLIFE</span>가입 승인 관리</h1>
+    <h1><span class="logo-badge">이에스</span>가입 승인 관리</h1>
     <div class="user-info">
       <span id="me-name"></span>
       <button onclick="location.href='crm.html'">접수 페이지로</button>
@@ -104,6 +104,29 @@ async function handleLogout(){
   location.href = 'index.html';
 }
 
+// 사업자등록증 미리보기(이미지) 또는 다운로드(PDF 등)
+async function viewBizDoc(storagePath, fileName){
+  const { data: signed, error } = await sb.storage.from('business-docs').createSignedUrl(storagePath, 3600);
+  if(error || !signed){ showToast('파일을 불러오지 못했습니다: ' + (error?error.message:'')); return; }
+
+  var isImage = /\.(jpe?g|png|gif|webp)$/i.test(fileName);
+  var overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.onclick=function(e){ if(e.target===overlay) document.body.removeChild(overlay); };
+
+  var box = document.createElement('div');
+  box.style.cssText='background:#fff;border-radius:10px;max-width:600px;width:100%;max-height:90vh;overflow:auto;padding:20px';
+
+  var closeBtn = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b style="color:#0d2b6b;font-size:14px">'+fileName+'</b><div><a href="'+signed.signedUrl+'" download="'+fileName+'" style="font-size:12px;color:#0d2b6b;text-decoration:underline;margin-right:12px">다운로드</a><button onclick="this.closest(\'div[style]\').parentElement.remove()" style="border:none;background:#f1f2f6;border-radius:5px;padding:4px 10px;cursor:pointer">닫기</button></div></div>';
+
+  box.innerHTML = closeBtn + (isImage
+    ? '<img src="'+signed.signedUrl+'" style="max-width:100%;border-radius:6px;border:1px solid #e5e7eb">'
+    : '<p style="font-size:13px;color:#6b7280">이미지 미리보기를 지원하지 않는 파일 형식입니다. 다운로드 버튼을 이용해주세요.</p>');
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
+
 async function init(){
   const { data:{ session } } = await sb.auth.getSession();
   if(!session){
@@ -141,7 +164,7 @@ function roleLabel(role){
 
 async function loadPendingUsers(){
   const { data: pending, error } = await sb.from('users')
-    .select('id, name, login_id, requested_role, requested_branch_name, created_at')
+    .select('id, name, login_id, requested_role, requested_branch_name, created_at, business_reg_no, business_doc_path, business_doc_name')
     .eq('status', 'pending')
     .order('created_at', { ascending: true });
 
@@ -185,6 +208,12 @@ async function loadPendingUsers(){
         '<input type="text" id="new-branch-code-'+u.id+'" placeholder="코드(필수)" style="width:80px;padding:5px 8px;border:1px solid #cdd2df;border-radius:4px;font-size:12px">' +
       '</div>';
 
+    const bizHtml = u.business_reg_no
+      ? '<div class="card-meta">사업자등록번호: <span class="id-tag">'+u.business_reg_no+'</span>' +
+        (u.business_doc_path ? ' · <button class="btn" style="background:#eef0f4;color:#0d2b6b;padding:3px 10px" onclick="viewBizDoc(\''+u.business_doc_path+'\',\''+(u.business_doc_name||'사업자등록증').replace(/'/g,"\\\\'")+'\')">사업자등록증 보기</button>' : ' · <span style="color:#b91c1c">첨부파일 없음</span>') +
+        '</div>'
+      : '';
+
     return '<div class="card" id="card-'+u.id+'">' +
       '<div class="card-row">' +
         '<div class="card-info">' +
@@ -192,6 +221,7 @@ async function loadPendingUsers(){
           '<div class="card-meta">신청 아이디: <span class="id-tag">'+(u.login_id||'—')+'</span>' +
             (isBranch ? ' · 신청 영업점: '+(u.requested_branch_name||'—') : '') +
           '</div>' +
+          bizHtml +
         '</div>' +
         '<div class="card-actions">' +
           '<select class="role-select" id="role-sel-'+u.id+'" onchange="onRoleSelectChange(\''+u.id+'\')">' +
