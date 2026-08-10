@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Customer Registration CRM - Skylife</title>
+<title>이에스 접수앱</title>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -65,18 +65,18 @@
       <span class="material-symbols-outlined text-primary-fixed">account_circle</span>
     </div>
     <div>
-      <h2 class="font-headline-md text-headline-md font-bold text-on-primary">Agent Portal</h2>
-      <p class="font-body-sm text-body-sm text-primary-fixed-dim">Sales Division</p>
+      <h2 class="font-headline-md text-headline-md font-bold text-on-primary">이에스 접수앱</h2>
+      <p class="font-body-sm text-body-sm text-primary-fixed-dim">영업/접수 시스템</p>
     </div>
   </div>
   <nav class="flex-1 flex flex-col gap-1">
     <a id="nav-form" class="flex items-center gap-stack-md bg-on-primary-fixed-variant text-on-primary rounded-lg px-4 py-3 active:scale-95 duration-150 cursor-pointer" onclick="switchTab('form')">
       <span class="material-symbols-outlined">person_add</span>
-      <span class="font-body-md text-body-md font-semibold">Customer Registration</span>
+      <span class="font-body-md text-body-md font-semibold">고객접수 등록</span>
     </a>
     <a id="nav-list" class="flex items-center gap-stack-md text-primary-fixed-dim hover:bg-primary-container/50 px-4 py-3 rounded-lg hover:bg-primary-container/30 transition-all active:scale-95 duration-150 cursor-pointer" onclick="switchTab('list')">
       <span class="material-symbols-outlined">list_alt</span>
-      <span class="font-body-md text-body-md">Reception List</span>
+      <span class="font-body-md text-body-md">접수리스트</span>
     </a>
   </nav>
 </aside>
@@ -85,7 +85,7 @@
   <header class="bg-surface-container-lowest h-16 flex items-center justify-between px-gutter shadow-sm z-30 shrink-0">
     <div class="flex items-center gap-3" id="header-title">
       <span class="material-symbols-outlined text-primary">person_add</span>
-      <h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">Customer Registration</h1>
+      <h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">고객접수 등록</h1>
     </div>
     <div class="flex items-center gap-4">
       <div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm bg-surface-container-low px-3 py-1.5 rounded-full border border-border-subtle">
@@ -183,13 +183,7 @@
             </select>
           </div>
           <div class="flex flex-col gap-1">
-            <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">OSS</label>
-            <select id="f-oss" onchange="toggleOssTerm()" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all bg-surface-container-lowest">
-              <option value="N">N</option><option value="Y">Y</option>
-            </select>
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">원스톱</label>
+            <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">원스톱(OSS)</label>
             <select id="f-onestop" onchange="toggleOnestopCarrier()" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all bg-surface-container-lowest">
               <option value="N">N</option><option value="Y">Y</option>
             </select>
@@ -208,8 +202,6 @@
             <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">기존 통신사 (직접입력)</label>
             <input type="text" id="f-existing-carrier-etc" placeholder="예: 세종텔레콤" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all"/>
           </div>
-        </div>
-        <div id="oss-term-wrap" class="hidden grid grid-cols-1 md:grid-cols-3 gap-6 mt-4 pt-4 border-t border-border-subtle">
           <div class="flex flex-col gap-1">
             <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">기존 통신사 해지요청일</label>
             <input type="date" id="f-oss-termdate" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all"/>
@@ -325,17 +317,35 @@
         <h3 class="font-headline-md text-headline-md text-primary mb-6 flex items-center gap-2">
           <span class="material-symbols-outlined">redeem</span> 정산 / 사은품
         </h3>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
           <div class="flex flex-col gap-1">
             <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">현금 사은품 (원)</label>
             <input id="f-gift" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all" placeholder="0" type="text" oninput="fmtNumber(this)"/>
           </div>
           <div class="flex flex-col gap-1">
+            <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">현금사은품 구분</label>
+            <select id="f-gift-type" onchange="toggleGiftSmoneyPhone()" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all bg-surface-container-lowest">
+              <option value="사은품">사은품</option><option value="S머니">S머니</option>
+            </select>
+          </div>
+          <div id="gift-smoney-phone-wrap" class="hidden flex flex-col gap-1">
+            <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">S머니 연락처</label>
+            <input id="f-gift-smoney-phone" oninput="if(document.getElementById('same-gift-phones').checked){document.getElementById('f-gift-phone').value=this.value;}" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all" placeholder="010-0000-0000" type="text" maxlength="13"/>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="flex items-center gap-2 cursor-pointer w-max mt-6">
+              <input id="f-gift-daenap" class="rounded border-outline-variant text-secondary focus:ring-secondary w-4 h-4 cursor-pointer" type="checkbox"/>
+              <span class="font-body-sm text-body-sm text-secondary font-semibold">대납 요청 (영업점 선지급)</span>
+            </label>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6 pt-4 border-t border-border-subtle border-dashed">
+          <div class="flex flex-col gap-1">
             <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">현물 사은품</label>
             <input id="f-gift-item" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all" placeholder="예: 스카이쿠폰 5만원" type="text"/>
           </div>
           <div class="flex flex-col gap-1">
-            <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">사은품 휴대폰번호</label>
+            <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">현물사은품 휴대폰번호</label>
             <input id="f-gift-phone" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all" placeholder="010-0000-0000" type="text" maxlength="13"/>
           </div>
           <div class="flex flex-col gap-2 md:col-span-2 justify-end pb-2">
@@ -344,8 +354,8 @@
               <span class="font-body-sm text-body-sm text-on-surface-variant">위 납부 은행정보와 동일</span>
             </label>
             <label class="flex items-center gap-2 cursor-pointer w-max">
-              <input id="f-gift-daenap" class="rounded border-outline-variant text-secondary focus:ring-secondary w-4 h-4 cursor-pointer" type="checkbox"/>
-              <span class="font-body-sm text-body-sm text-secondary font-semibold">대납 요청 (영업점 선지급)</span>
+              <input id="same-gift-phones" onchange="toggleSameGiftPhones()" class="rounded border-outline-variant text-primary focus:ring-primary w-4 h-4 cursor-pointer" type="checkbox"/>
+              <span class="font-body-sm text-body-sm text-on-surface-variant">S머니 연락처와 현물사은품 연락처 동일</span>
             </label>
           </div>
         </div>
@@ -474,6 +484,7 @@
       <table class="w-full text-left text-body-sm whitespace-nowrap">
         <thead class="bg-surface-container-low text-on-surface-variant font-table-header text-table-header uppercase sticky top-0 z-10 shadow-[0_1px_0_#e2e8f0]">
           <tr>
+            <th class="px-3 py-3">영업점</th>
             <th class="px-3 py-3">접수번호</th>
             <th class="px-3 py-3">가입계약번호</th>
             <th class="px-3 py-3">고객명</th>
@@ -596,11 +607,9 @@ const DPS_TV=[
 ];
 // TV 추가 상품 (기존고객 추가 — DPS와 동일 구조, 알뜰 제외)
 const TV_ADD=[
+  '위성 2nd 베이직','위성 2nd ALL','IPTV 2nd 베이직','IPTV 2nd 플러스',
   '베이직','ALL','포인트','초이스',
-  '30% 베이직','30% ALL','30% 포인트','30% 초이스',
-  'IPTV 베이직','IPTV 플러스',
-  '30% IPTV 베이직','30% IPTV 플러스',
-  '위성 2nd 베이직','위성 2nd ALL','IPTV 2nd 베이직','IPTV 2nd 플러스'
+  'IPTV 베이직','IPTV 플러스'
 ];
 const CONTRACT=['무약정','1년','2년','3년','5년'];
 function so(arr,blank){return'<option value="">'+(blank||'선택')+'</option>'+arr.map(o=>'<option>'+o+'</option>').join('');}
@@ -641,6 +650,30 @@ function toggleSameGiftPayer(){
   if(cb.checked){el.value=document.getElementById('f-name').value||'';el.readOnly=true;el.classList.add('bg-surface-muted','text-on-surface-variant');}
   else{el.readOnly=false;el.classList.remove('bg-surface-muted','text-on-surface-variant');}
 }
+// 현금사은품 구분(사은품/S머니)에 따라 S머니 연락처 입력칸 토글
+function toggleGiftSmoneyPhone(){
+  var v=document.getElementById('f-gift-type').value;
+  var wrap=document.getElementById('gift-smoney-phone-wrap');
+  if(v==='S머니'){wrap.classList.remove('hidden');}
+  else{
+    wrap.classList.add('hidden');
+    document.getElementById('f-gift-smoney-phone').value='';
+    document.getElementById('same-gift-phones').checked=false;
+    toggleSameGiftPhones();
+  }
+}
+// S머니 연락처 = 현물사은품 연락처 동일 토글
+function toggleSameGiftPhones(){
+  var cb=document.getElementById('same-gift-phones');
+  var smoneyEl=document.getElementById('f-gift-smoney-phone');
+  var itemEl=document.getElementById('f-gift-phone');
+  if(cb.checked){
+    itemEl.value=smoneyEl.value||'';
+    itemEl.readOnly=true; itemEl.classList.add('bg-surface-muted','text-on-surface-variant');
+  } else {
+    itemEl.readOnly=false; itemEl.classList.remove('bg-surface-muted','text-on-surface-variant');
+  }
+}
 function updatePayLabels(){
   var v=document.getElementById('f-paymethod').value;
   document.getElementById('bank-label').textContent=v==='카드납부'?'카드사':'은행 / 카드사';
@@ -656,11 +689,11 @@ function switchTab(tab){
   if (tab === 'form') {
     btnForm.className = "flex items-center gap-stack-md bg-on-primary-fixed-variant text-on-primary rounded-lg px-4 py-3 active:scale-95 duration-150 cursor-pointer";
     btnList.className = "flex items-center gap-stack-md text-primary-fixed-dim hover:bg-primary-container/50 px-4 py-3 rounded-lg hover:bg-primary-container/30 transition-all active:scale-95 duration-150 cursor-pointer";
-    document.getElementById('header-title').innerHTML = '<span class="material-symbols-outlined text-primary">person_add</span><h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">Customer Registration</h1>';
+    document.getElementById('header-title').innerHTML = '<span class="material-symbols-outlined text-primary">person_add</span><h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">고객접수 등록</h1>';
   } else {
     btnList.className = "flex items-center gap-stack-md bg-on-primary-fixed-variant text-on-primary rounded-lg px-4 py-3 active:scale-95 duration-150 cursor-pointer";
     btnForm.className = "flex items-center gap-stack-md text-primary-fixed-dim hover:bg-primary-container/50 px-4 py-3 rounded-lg hover:bg-primary-container/30 transition-all active:scale-95 duration-150 cursor-pointer";
-    document.getElementById('header-title').innerHTML = '<span class="material-symbols-outlined text-primary">list_alt</span><h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">Reception List</h1>';
+    document.getElementById('header-title').innerHTML = '<span class="material-symbols-outlined text-primary">list_alt</span><h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">접수리스트</h1>';
     renderTable();
   }
 }
@@ -931,8 +964,9 @@ function addDpsTV(blockId){
   var div=document.createElement('div');
   div.id='dps-tv-extra-'+blockId+'-'+n;
   div.style.position='relative';
+  // 인터넷 1개에 TV가 2개 이상 붙는 경우 — 2번째 TV부터는 "TV 추가" 취급 (2nd 상품 목록 사용)
   div.innerHTML=
-    tvHtml(pfx,DPS_TV,'TV '+n+' (DPS 결합)',ti)+
+    tvHtml(pfx,TV_ADD,'TV '+n+' (TV 추가)',ti)+
     '<button type="button" onclick="this.parentNode.remove()" style="position:absolute;top:12px;right:12px;background:none;border:none;cursor:pointer;color:#9ca3af;font-size:18px" title="TV 블록 삭제">×</button>';
   wrap.appendChild(div);
   setDefaultCouponMonths();
@@ -943,19 +977,18 @@ function addDpsTV(blockId){
 function setDefaultCouponMonths(){
   // 쿠폰 시작월은 접수 즉시 익월 자동 고정이라 입력칸이 없음 — no-op 유지(호출부 호환용)
 }
-// OSS Y/N에 따른 해지옵션 토글
-function toggleOssTerm(){
-  var v=document.getElementById('f-oss').value;
-  var wrap=document.getElementById('oss-term-wrap');
-  if(v==='Y'){wrap.classList.remove('hidden');}
-  else{wrap.classList.add('hidden');}
-}
-// 원스톱 여부에 따른 기존통신사 입력칸 토글
+// 원스톱(OSS) 여부에 따른 기존통신사/해지요청일 입력칸 토글 (통합)
 function toggleOnestopCarrier(){
   var v=document.getElementById('f-onestop').value;
   var wrap=document.getElementById('onestop-wrap');
   if(v==='Y'){wrap.classList.remove('hidden');}
-  else{wrap.classList.add('hidden');document.getElementById('f-existing-carrier').value='';document.getElementById('f-existing-carrier-etc').value='';}
+  else{
+    wrap.classList.add('hidden');
+    document.getElementById('f-existing-carrier').value='';
+    document.getElementById('f-existing-carrier-etc').value='';
+    document.getElementById('f-oss-termdate').value='';
+    document.getElementById('f-oss-asap').checked=false;
+  }
 }
 function toggleExistingCarrierEtc(){
   var v=document.getElementById('f-existing-carrier').value;
@@ -1262,7 +1295,8 @@ function parseInput(){
         var tvWrap='<div id="dps-tv-wrap-'+blockId+'">';
         tvProds.forEach(function(tv,idx){
           var pfx='b'+blockId+'_tv'+(idx+1);
-          tvWrap+=tvHtml(pfx,DPS_TV,'TV '+(idx+1)+' (DPS 결합)',30+(parseInt(blockId)*10)+(idx*5));
+          var isFirst=(idx===0);
+          tvWrap+=tvHtml(pfx, isFirst?DPS_TV:TV_ADD, 'TV '+(idx+1)+(isFirst?' (DPS 결합)':' (TV 추가)'), 30+(parseInt(blockId)*10)+(idx*5));
         });
         tvWrap+='</div>';
         tvWrap+='<button type="button" onclick="addDpsTV('+blockId+')" class="my-2 flex items-center gap-2 text-tv-accent text-body-sm font-semibold hover:underline">'+
@@ -1457,9 +1491,16 @@ function parseInput(){
     var giftMatched='';
     if(cashMatch2){giftAmount=parseInt(cashMatch2[1])*10000;giftMatched=cashMatch2[0];}
     else if(manMatch2){giftAmount=parseInt(manMatch2[1])*10000;giftMatched=manMatch2[0];}
-    if(giftAmount>0){document.getElementById('f-gift').value=giftAmount.toLocaleString();filled.push('현금사은품');}
+    if(giftAmount>0){
+      document.getElementById('f-gift').value=giftAmount.toLocaleString();
+      if(giftTextOnly.indexOf('S머니')>=0||giftTextOnly.toUpperCase().indexOf('SMONEY')>=0){
+        document.getElementById('f-gift-type').value='S머니';
+        toggleGiftSmoneyPhone();
+      }
+      filled.push('현금사은품');
+    }
     // 현물 사은품(스카이쿠폰 등) — 현물 입력칸에 직접 기입
-    var giftRemain=giftTextOnly.replace(giftMatched,'').replace(/^\s*\+?\s*/,'').replace(/\s*\+?\s*$/,'').replace(/^\+|\+$/g,'').trim();
+    var giftRemain=giftTextOnly.replace(giftMatched,'').replace(/S머니/gi,'').replace(/SMONEY/gi,'').replace(/^\s*\+?\s*/,'').replace(/\s*\+?\s*$/,'').replace(/^\+|\+$/g,'').trim();
     // "대납부탁드립니다" 등 대납 키워드는 별도 처리하고 현물에서 제외
     var daenapKeywords=['대납','대납부탁','대납요청'];
     var hasDaenap=daenapKeywords.some(function(k){return giftMainLine.indexOf(k)>=0;})||(giftMainLine.indexOf('/')>=0&&giftMainLine.split('/').some(function(s){return daenapKeywords.some(function(k){return s.indexOf(k)>=0;});}));
@@ -1580,11 +1621,12 @@ function parseInput(){
     }
   }
 
-  // ── OSS ──
+  // ── OSS (원스톱과 동일 개념 — f-onestop으로 통합) ──
   var oss=getVal(['oss']);
-  if(oss){
-    document.getElementById('f-oss').value=oss.toUpperCase().indexOf('Y')>=0?'Y':'N';
-    filled.push('OSS');
+  if(oss && oss.toUpperCase().indexOf('Y')>=0){
+    document.getElementById('f-onestop').value='Y';
+    toggleOnestopCarrier();
+    filled.push('원스톱(OSS)');
   }
 
   // ── 원스톱 / 기존통신사 ──
@@ -1776,9 +1818,12 @@ function dbToRecord(row){
     paymethod: row.pay_method, bank: row.bank, acct: row.acct,
     payer: row.payer, relation: row.relation, payerBirth: row.payer_birth,
     product: row.product, branchCode: row.branch_code, installCode: row.install_code,
+    branchOfficialCode: row.branches ? row.branches.branch_code : null,
+    branchName: row.branches ? row.branches.branch_name : null,
     wishdate: row.wishdate,
     priceBefore: row.price_before, priceAfter: row.price_after,
-    gift: row.gift, giftItem: row.gift_item, giftPhone: row.gift_phone, giftDaenap: row.gift_daenap,
+    gift: row.gift, giftType: row.gift_type||'사은품', giftItem: row.gift_item, giftPhone: row.gift_phone,
+    giftSmoneyPhone: row.gift_smoney_phone, giftDaenap: row.gift_daenap,
     gbank: row.gbank, gacct: row.gacct, gpayer: row.gpayer,
     memo: row.memo, date: row.created_at ? row.created_at.slice(0,10) : ''
   };
@@ -1812,7 +1857,9 @@ function recordToDb(rec){
   if('priceAfter' in rec) out.price_after = rec.priceAfter ? Number(rec.priceAfter) : null;
   if('gift' in rec) out.gift = rec.gift ? Number(rec.gift) : null;
   if('giftItem' in rec) out.gift_item = rec.giftItem;
+  if('giftType' in rec) out.gift_type = rec.giftType;
   if('giftPhone' in rec) out.gift_phone = rec.giftPhone;
+  if('giftSmoneyPhone' in rec) out.gift_smoney_phone = rec.giftSmoneyPhone;
   if('giftDaenap' in rec) out.gift_daenap = rec.giftDaenap;
   if('gbank' in rec) out.gbank = rec.gbank;
   if('gacct' in rec) out.gacct = rec.gacct;
@@ -1866,7 +1913,7 @@ var expandedGroups = {}; // { recordId: true } — 고객단위 압축 리스트
 async function fetchRecords(){
   // records + record_lines를 한 번에 조인해서 가져온 뒤, 회선단위로 펼침
   const { data, error } = await sb.from('records')
-    .select('*, record_lines(*)')
+    .select('*, record_lines(*), branches:branch_id(branch_name, branch_code)')
     .order('created_at', { ascending: false });
 
   if(error){
@@ -1980,8 +2027,211 @@ function resetForm(){
   document.getElementById('product-blocks').innerHTML='';
   bIdx=0; Object.keys(bTypes).forEach(k=>delete bTypes[k]);
   addBlock();
+  window._reregisterRecordId = null;
+  document.getElementById('header-title').innerHTML = '<span class="material-symbols-outlined text-primary">person_add</span><h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">고객접수 등록</h1>';
   document.getElementById('f-name').focus();
   showToast('초기화되었습니다.');
+}
+
+// ── 재등록: 기존 접수건 전체를 신규등록 폼에 미리 채워서 다시 수정 후 그대로 덮어쓰기 ──
+function startReregister(recordId){
+  closeModal();
+  switchTab('form');
+  window._reregisterRecordId = recordId;
+  document.getElementById('header-title').innerHTML = '<span class="material-symbols-outlined text-secondary">restart_alt</span><h1 class="font-headline-lg text-headline-lg font-bold text-secondary tracking-tight">재등록 — 내용 수정 후 등록하기를 누르면 기존 접수건에 덮어씌워집니다</h1>';
+  prefillFormFromRecord(recordId);
+}
+
+// 블록 타입을 프로그래밍적으로 지정 (setPType은 클릭 이벤트의 버튼 엘리먼트가 필요해서 별도 구현)
+function applyBlockTypeSilently(id, targetType){
+  var labelMap={dps:'DPS 결합',internet:'인터넷 단독',tvonly:'TV 단독(신규)',tv:'TV 추가'};
+  var bar=document.getElementById('blk-'+id).querySelector('.flex.p-1');
+  if(bar){
+    bar.querySelectorAll('.ptype-btn').forEach(function(b){
+      var isActive = b.textContent.trim()===labelMap[targetType];
+      b.className = isActive
+        ? 'ptype-btn px-5 py-1.5 text-body-sm font-semibold rounded-md bg-surface-container-lowest text-primary shadow-sm'
+        : 'ptype-btn px-5 py-1.5 text-body-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-md transition-colors';
+    });
+  }
+  renderBC(id, targetType, 30+(id*10));
+  bTypes[id]=targetType;
+}
+
+function fillCouponFields(pfx, coupon, kind){
+  if(!coupon) return;
+  var checkEl=document.getElementById(pfx+'-'+kind+'coupon-check');
+  if(!checkEl) return;
+  if(coupon.checked){
+    checkEl.checked=true;
+    toggleCouponField(pfx,kind);
+    if(kind==='install'){
+      if(coupon.amt) document.getElementById(pfx+'-installcoupon-amt').value=Number(coupon.amt).toLocaleString();
+    } else {
+      if(coupon.amt) document.getElementById(pfx+'-ratecoupon-amt').value=Number(coupon.amt).toLocaleString();
+      if(coupon.months) document.getElementById(pfx+'-ratecoupon-months').value=coupon.months;
+    }
+  }
+}
+
+async function prefillFormFromRecord(recordId){
+  var r = recordsById[recordId];
+  var lines = allLines.filter(function(x){ return x.recordId === recordId; }).sort(function(a,b){
+    return 0; // allLines는 이미 line_no순으로 들어와있음
+  });
+  if(!r){ showToast('접수건 정보를 찾지 못했습니다.'); return; }
+
+  // 기본정보
+  document.getElementById('f-name').value=r.name||'';
+  document.getElementById('f-phone').value=r.phone||'';
+  document.getElementById('f-ssn').value=r.ssn||'';
+  document.getElementById('f-addr-zip').readOnly=false;
+  document.getElementById('f-addr-base').readOnly=false;
+  document.getElementById('f-addr-zip').value='';
+  document.getElementById('f-addr-base').value=r.addr||'';
+  document.getElementById('f-addr-base').placeholder='';
+  document.getElementById('f-addr-detail').value='';
+  document.getElementById('f-addr').value=r.addr||'';
+  document.getElementById('f-apt').value=r.apt||'N';
+
+  // 원스톱(OSS)
+  document.getElementById('f-onestop').value=r.onestop||'N';
+  toggleOnestopCarrier();
+  if(r.onestop==='Y'){
+    var carrierOpts=['KT','SKT','LG유플러스','SK브로드밴드','KT스카이라이프'];
+    if(carrierOpts.indexOf(r.existingCarrier)>=0){ document.getElementById('f-existing-carrier').value=r.existingCarrier; }
+    else if(r.existingCarrier){ document.getElementById('f-existing-carrier').value='기타'; toggleExistingCarrierEtc(); document.getElementById('f-existing-carrier-etc').value=r.existingCarrier; }
+    document.getElementById('f-oss-asap').checked=!!r.ossAsap;
+    document.getElementById('f-oss-termdate').value=r.ossAsap?'':(r.ossTermDate||'');
+    toggleOssAsap();
+  }
+
+  // 본인인증
+  setSelectVal(document.getElementById('f-auth-type'), r.authType);
+  document.getElementById('f-auth-value').value=r.authValue||'';
+
+  // 결제정보
+  setSelectVal(document.getElementById('f-paymethod'), r.paymethod);
+  updatePayLabels();
+  setSelectVal(document.getElementById('f-bank'), r.bank);
+  document.getElementById('f-acct').value=r.acct||'';
+  document.getElementById('f-payer').value=r.payer||'';
+  setSelectVal(document.getElementById('f-relation'), r.relation||'본인');
+  togglePayerBirth();
+  document.getElementById('f-payer-birth').value=r.payerBirth||'';
+
+  // 상품/회선 블록 재구성
+  document.getElementById('product-blocks').innerHTML='';
+  bIdx=0; Object.keys(bTypes).forEach(function(k){ delete bTypes[k]; });
+  dpsTvCount = {};
+
+  var tvLines = lines.filter(function(l){ return l.kind==='tv'; });
+  var inetLines = lines.filter(function(l){ return l.kind==='inet'; });
+
+  if(inetLines.length>0){
+    // 인터넷 1개(+TV 0개 이상) → 하나의 블록(internet 또는 dps)로 재구성
+    addBlock(); // id=1 생성
+    var blkId=1;
+    if(tvLines.length>0){
+      applyBlockTypeSilently(blkId,'dps');
+      dpsTvCount[blkId]=1;
+      setSelectVal(document.getElementById('b'+blkId+'_tv1-tp'), tvLines[0].prod);
+      setSelectVal(document.getElementById('b'+blkId+'_tv1-tc'), tvLines[0].contractPeriod);
+      document.getElementById('b'+blkId+'_tv1-receiptno').value=tvLines[0].receiptNo||'';
+      fillCouponFields('b'+blkId+'_tv1', tvLines[0].installCoupon, 'install');
+      fillCouponFields('b'+blkId+'_tv1', tvLines[0].rateCoupon, 'rate');
+      for(var ti=1; ti<tvLines.length; ti++){
+        addDpsTV(blkId);
+        var n=dpsTvCount[blkId];
+        var tpfx='b'+blkId+'_tv'+n;
+        setSelectVal(document.getElementById(tpfx+'-tp'), tvLines[ti].prod);
+        setSelectVal(document.getElementById(tpfx+'-tc'), tvLines[ti].contractPeriod);
+        document.getElementById(tpfx+'-receiptno').value=tvLines[ti].receiptNo||'';
+        fillCouponFields(tpfx, tvLines[ti].installCoupon, 'install');
+        fillCouponFields(tpfx, tvLines[ti].rateCoupon, 'rate');
+      }
+      var ipfx='b'+blkId+'_inet';
+      setSelectVal(document.getElementById(ipfx+'-ip'), inetLines[0].prod);
+      setSelectVal(document.getElementById(ipfx+'-ic'), inetLines[0].contractPeriod);
+      if(inetLines[0].wifi) document.getElementById(ipfx+'-iw').value=inetLines[0].wifi;
+      document.getElementById(ipfx+'-receiptno').value=inetLines[0].receiptNo||'';
+      fillCouponFields(ipfx, inetLines[0].installCoupon, 'install');
+      fillCouponFields(ipfx, inetLines[0].rateCoupon, 'rate');
+    } else {
+      applyBlockTypeSilently(blkId,'internet');
+      setSelectVal(document.getElementById('b'+blkId+'-ip'), inetLines[0].prod);
+      setSelectVal(document.getElementById('b'+blkId+'-ic'), inetLines[0].contractPeriod);
+      if(inetLines[0].wifi) document.getElementById('b'+blkId+'-iw').value=inetLines[0].wifi;
+      document.getElementById('b'+blkId+'-receiptno').value=inetLines[0].receiptNo||'';
+      fillCouponFields('b'+blkId, inetLines[0].installCoupon, 'install');
+      fillCouponFields('b'+blkId, inetLines[0].rateCoupon, 'rate');
+    }
+    // 인터넷이 여러개인 특이 케이스는 자동복원 대상이 아님 — 필요시 '회선 추가'로 수동 보완
+  } else if(tvLines.length>0){
+    // TV만 있는 경우 — 첫 TV는 단독(신규), 나머지는 별도 블록(TV 추가)으로
+    tvLines.forEach(function(tvLine, idx){
+      bIdx++;
+      var blkId=bIdx;
+      var wrap=document.getElementById('product-blocks');
+      var div=document.createElement('div');
+      div.id='blk-'+blkId;
+      div.className='border border-border-subtle rounded-lg p-5 bg-surface-muted relative mt-4';
+      div.innerHTML=`
+        <div class="absolute -top-3 left-4 bg-surface-muted px-2 font-label-caps text-label-caps text-primary flex items-center gap-1">
+          <span class="material-symbols-outlined text-[14px]">router</span> 회선 ${blkId}
+        </div>
+        ${blkId>1 ? `<button onclick="removeBlock(${blkId})" class="absolute top-3 right-3 text-on-surface-variant hover:bg-error-container hover:text-error p-1.5 rounded transition-colors" title="삭제"><span class="material-symbols-outlined text-[18px]">delete</span></button>`:''}
+        <div class="flex p-1 bg-surface-container rounded-lg w-max mb-6 mt-1 flex-wrap">
+          <button class="ptype-btn px-5 py-1.5 text-body-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-md transition-colors" onclick="setPType(${blkId},'internet',this)" type="button">인터넷 단독</button>
+          <button class="ptype-btn px-5 py-1.5 text-body-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-md transition-colors" onclick="setPType(${blkId},'dps',this)" type="button">DPS 결합</button>
+          <button class="ptype-btn px-5 py-1.5 text-body-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-md transition-colors" onclick="setPType(${blkId},'tvonly',this)" type="button">TV 단독(신규)</button>
+          <button class="ptype-btn px-5 py-1.5 text-body-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-md transition-colors" onclick="setPType(${blkId},'tv',this)" type="button">TV 추가</button>
+        </div>
+        <div id="bc-${blkId}" class="space-y-4"></div>`;
+      wrap.appendChild(div);
+      var blockType = idx===0 ? 'tvonly' : 'tv';
+      applyBlockTypeSilently(blkId, blockType);
+      var pfx='b'+blkId+'_tv1';
+      setSelectVal(document.getElementById(pfx+'-tp'), tvLine.prod);
+      setSelectVal(document.getElementById(pfx+'-tc'), tvLine.contractPeriod);
+      document.getElementById(pfx+'-receiptno').value=tvLine.receiptNo||'';
+      fillCouponFields(pfx, tvLine.installCoupon, 'install');
+      fillCouponFields(pfx, tvLine.rateCoupon, 'rate');
+    });
+  } else {
+    addBlock(); // 회선정보가 비정상적으로 없는 경우 — 빈 블록 하나
+  }
+  setDefaultCouponMonths();
+
+  // 요금
+  if(r.priceBefore) document.getElementById('f-pricebefore').value=Number(r.priceBefore).toLocaleString();
+  calcTotalPriceAfter();
+
+  // 설치희망일
+  var wp=parseWishdateParts(r.wishdate);
+  document.getElementById('f-wishdate').value=wp.date||'';
+  document.getElementById('f-wishdate-asap-check').checked=wp.asap;
+
+  // 사은품
+  if(r.gift) document.getElementById('f-gift').value=Number(r.gift).toLocaleString();
+  setSelectVal(document.getElementById('f-gift-type'), r.giftType||'사은품');
+  toggleGiftSmoneyPhone();
+  if(r.giftType==='S머니') document.getElementById('f-gift-smoney-phone').value=r.giftSmoneyPhone||'';
+  document.getElementById('f-gift-item').value=r.giftItem||'';
+  document.getElementById('f-gift-phone').value=r.giftPhone||'';
+  document.getElementById('f-gift-daenap').checked=!!r.giftDaenap;
+  setSelectVal(document.getElementById('f-gbank'), r.gbank);
+  document.getElementById('f-gacct').value=r.gacct||'';
+  document.getElementById('f-gpayer').value=r.gpayer||'';
+
+  // 코드
+  document.getElementById('f-branchcode').value=r.branchCode||'';
+  document.getElementById('f-installcode').value=r.installCode||'';
+
+  // 메모
+  document.getElementById('f-memo').value=r.memo||'';
+
+  showToast('기존 접수 내용을 불러왔습니다 — 수정 후 [등록하기]를 누르면 이 접수건에 덮어씌워집니다.');
 }
 
 async function submitForm(){
@@ -2061,9 +2311,9 @@ async function submitForm(){
     ssn:document.getElementById('f-ssn').value.trim(),
     addr:document.getElementById('f-addr').value.trim(),
     apt:document.getElementById('f-apt').value,
-    oss:document.getElementById('f-oss').value,
-    ossAsap:document.getElementById('f-oss').value==='Y'?document.getElementById('f-oss-asap').checked:false,
-    ossTermDate:document.getElementById('f-oss').value==='Y'?document.getElementById('f-oss-termdate').value:'',
+    oss:document.getElementById('f-onestop').value,
+    ossAsap:document.getElementById('f-onestop').value==='Y'?document.getElementById('f-oss-asap').checked:false,
+    ossTermDate:document.getElementById('f-onestop').value==='Y'?document.getElementById('f-oss-termdate').value:'',
     onestop:document.getElementById('f-onestop').value,
     existingCarrier:document.getElementById('f-onestop').value==='Y'?(document.getElementById('f-existing-carrier').value==='기타'?document.getElementById('f-existing-carrier-etc').value.trim():document.getElementById('f-existing-carrier').value):'',
     authType:document.getElementById('f-auth-type').value,
@@ -2075,8 +2325,10 @@ async function submitForm(){
     relation:document.getElementById('f-relation').value,
     payerBirth:document.getElementById('f-relation').value!=='본인'?document.getElementById('f-payer-birth').value.trim():'',
     gift:document.getElementById('f-gift').value.replace(/,/g,''),
+    giftType:document.getElementById('f-gift-type').value,
     giftItem:document.getElementById('f-gift-item').value.trim(),
     giftPhone:document.getElementById('f-gift-phone').value.trim(),
+    giftSmoneyPhone:document.getElementById('f-gift-type').value==='S머니'?document.getElementById('f-gift-smoney-phone').value.trim():'',
     giftDaenap:document.getElementById('f-gift-daenap').checked,
     gbank:document.getElementById('f-gbank').value,
     gacct:document.getElementById('f-gacct').value,
@@ -2090,6 +2342,53 @@ async function submitForm(){
   };
 
   var dbRow = recordToDb(newRecord);
+
+  // ── 재등록 모드: 신규 insert 대신 기존 접수건을 덮어씀 ──
+  if(window._reregisterRecordId){
+    var targetId = window._reregisterRecordId;
+
+    const { error: updErr } = await sb.from('records').update(dbRow).eq('id', targetId);
+    if(updErr){ showToast('재등록 실패: ' + updErr.message); return; }
+
+    // 기존 회선을 등록순서(line_no) 기준으로 매칭 — 접수번호/계약번호/상태/개통일 등 진행상태는 보존하고
+    // 상품/약정/와이파이/쿠폰 등 "다시 입력한 내용"만 갱신함
+    const { data: existingLines } = await sb.from('record_lines').select('id, line_no').eq('record_id', targetId).order('line_no',{ascending:true});
+    var exLines = existingLines || [];
+
+    for(var li=0; li<lineDetails.length; li++){
+      var ld = lineDetails[li];
+      var contentUpdate = lineToDb({
+        label: ld.label, kind: ld.kind, prod: ld.prod,
+        contractPeriod: ld.contractPeriod, wifi: ld.wifi,
+        installCoupon: ld.installCoupon, rateCoupon: ld.rateCoupon
+      });
+      if(li < exLines.length){
+        await sb.from('record_lines').update(contentUpdate).eq('id', exLines[li].id);
+      } else {
+        var freshLine = lineToDb({
+          recordId: targetId, lineNo: li+1,
+          label: ld.label, kind: ld.kind, prod: ld.prod,
+          contractPeriod: ld.contractPeriod, wifi: ld.wifi,
+          receiptNo: ld.receiptNo, contractNo: '',
+          status: '익월접수예정', openDate: '',
+          installCoupon: ld.installCoupon, rateCoupon: ld.rateCoupon
+        });
+        await sb.from('record_lines').insert(freshLine);
+      }
+    }
+    if(exLines.length > lineDetails.length){
+      showToast('재등록 완료 — 기존 회선(' + exLines.length + '건)보다 적게 입력되어, 초과분은 리스트에서 직접 삭제해주세요.');
+    } else {
+      showToast('재등록 완료 — ' + name + ' 님');
+    }
+
+    if(pendingFiles.length > 0){ await uploadPendingFiles(targetId); }
+
+    window._reregisterRecordId = null;
+    setTimeout(resetForm,700);
+    return;
+  }
+
   dbRow.branch_id = currentUser.role==='branch' ? currentUser.branchId : null;
 
   // 1) records 헤더 먼저 insert
@@ -2153,11 +2452,13 @@ async function sendTelegramNotification(recordId, headerRec, lines){
   if(headerRec.relation&&headerRec.relation!=='본인') msgLines.push('예금주와의 관계 : ' + headerRec.relation);
   msgLines.push('사은품 계좌 : ' + (headerRec.gbank===headerRec.bank&&headerRec.gacct===headerRec.acct?'상동':((headerRec.gbank||'')+'/'+(headerRec.gpayer||'')+'/'+(headerRec.gacct||''))));
   var giftParts=[];
-  if(headerRec.gift) giftParts.push('현금'+(parseInt(headerRec.gift)/10000)+'');
+  if(headerRec.gift) giftParts.push('현금'+(parseInt(headerRec.gift)/10000)+'('+(headerRec.giftType||'사은품')+')');
   if(headerRec.giftItem) giftParts.push(headerRec.giftItem);
   if(giftParts.length>0) msgLines.push('사은품 : ' + giftParts.join(' + ') + (headerRec.giftDaenap?' / 대납부탁드립니다':''));
+  if(headerRec.giftType==='S머니'&&headerRec.giftSmoneyPhone) msgLines.push('S머니 연락처 : ' + headerRec.giftSmoneyPhone);
+  if(headerRec.giftPhone) msgLines.push('현물사은품 휴대폰번호 : ' + headerRec.giftPhone);
   if(headerRec.authType) msgLines.push('인증방법 : ' + headerRec.authType + (headerRec.authValue?('/'+headerRec.authValue):''));
-  msgLines.push('OSS : ' + (headerRec.oss||'N'));
+  msgLines.push('원스톱(OSS) : ' + (headerRec.onestop||'N') + (headerRec.onestop==='Y'?(' (기존통신사 '+(headerRec.existingCarrier||'미기입')+' / '+(headerRec.ossAsap?'설치 후 익일해지':('해지요청일 '+(headerRec.ossTermDate||'미기입')))+')'):''));
   msgLines.push('설치희망일 : ' + (headerRec.wishdate||''));
   msgLines.push('');
   msgLines.push('<b>회선 정보</b>');
@@ -2213,6 +2514,19 @@ function ssn6(ssn){
   if(s.length<6)return ssn;
   return s.slice(0,6);
 }
+// "279(혜담)" 형태 — branches 테이블 조인값 우선, 없으면 수기입력 코드만
+function branchLabel(r){
+  var code=r.branchOfficialCode||r.branchCode||'';
+  if(!code) return '—';
+  return r.branchName ? (code+'('+r.branchName+')') : code;
+}
+// 설치희망일 "2026-07-29 최대한빠르게" → "2026-07-29 [신속]" 뱃지형으로 축약
+function wishdateHtml(wishdate){
+  var p=parseWishdateParts(wishdate);
+  if(!p.date&&!p.asap) return '—';
+  var badge=p.asap?' <span class="inline-block bg-secondary/10 text-secondary text-[9px] font-bold px-1 py-0.5 rounded">신속</span>':'';
+  return (p.date||'')+badge;
+}
 async function renderTable(){
   await fetchRecords(); // RLS가 이미 권한별로 필터링해서 반환함 — allLines는 회선단위로 펼쳐진 배열
 
@@ -2230,6 +2544,7 @@ async function renderTable(){
 function singleRowHtml(r,i){
   return `
     <tr class="hover:bg-surface-muted transition-colors">
+      <td class="px-3 py-3 text-[12px] text-on-surface-variant whitespace-nowrap">${branchLabel(r)}</td>
       <td class="px-3 py-3" onclick="event.stopPropagation()">
         <input type="text" value="${r.receiptNo||''}" placeholder="접수번호" onchange="updateReceiptNo('${r.lineId}',this.value)"
           class="border border-border-subtle rounded px-2 py-1 text-[12px] w-20 focus:border-primary focus:ring-1 focus:ring-primary outline-none">
@@ -2242,7 +2557,7 @@ function singleRowHtml(r,i){
       <td class="px-3 py-3 text-on-surface-variant text-[12px]">${ssn6(r.ssn||'')}</td>
       <td class="px-3 py-3 text-on-surface-variant text-[12px]">${r.phone}</td>
       <td class="px-3 py-3 text-on-surface-variant text-[12px]">${r.date}</td>
-      <td class="px-3 py-3 text-on-surface-variant text-[12px]">${r.wishdate||'—'}</td>
+      <td class="px-3 py-3 text-on-surface-variant text-[12px] whitespace-nowrap">${wishdateHtml(r.wishdate)}</td>
       <td class="px-3 py-3 text-[12px]" onclick="event.stopPropagation()">
         <input type="date" value="${r.openDate||''}" onchange="updateOpenDate('${r.lineId}',this.value)"
           class="border border-border-subtle rounded px-1 py-1 text-[12px] focus:border-primary focus:ring-1 focus:ring-primary outline-none w-32">
@@ -2270,6 +2585,7 @@ function summaryRowHtml(lines, recId, expanded, firstIdx){
     : `<span class="px-2 py-1 rounded-full text-[10px] font-bold tracking-wide bg-surface-variant text-on-surface">상태 혼합</span>`;
   return `
     <tr class="hover:bg-surface-muted transition-colors bg-surface-container-low/40">
+      <td class="px-3 py-3 text-[12px] text-on-surface-variant whitespace-nowrap">${branchLabel(r)}</td>
       <td class="px-3 py-3" onclick="event.stopPropagation()">
         <button onclick="toggleGroupExpand('${recId}')" class="text-[11px] font-semibold text-primary flex items-center gap-1 whitespace-nowrap">
           <span class="material-symbols-outlined text-[16px]">${expanded?'expand_less':'expand_more'}</span>${expanded?'접기':'펼치기'} (${lines.length}건)
@@ -2277,14 +2593,14 @@ function summaryRowHtml(lines, recId, expanded, firstIdx){
       </td>
       <td class="px-3 py-3" onclick="event.stopPropagation()">
         <button onclick="openBulkEntry('${recId}')" class="bg-secondary/10 text-secondary hover:bg-secondary/20 transition-colors rounded px-3 py-1 text-[11px] font-semibold whitespace-nowrap flex items-center gap-1">
-          <span class="material-symbols-outlined text-[14px]">edit_note</span> 접수/계약번호 일괄입력
+          <span class="material-symbols-outlined text-[14px]">edit_note</span> 일괄입력
         </button>
       </td>
       <td class="px-3 py-3 font-semibold cursor-pointer" onclick="openDetail(${firstIdx})">${r.name}</td>
       <td class="px-3 py-3 text-on-surface-variant text-[12px]">${ssn6(r.ssn||'')}</td>
       <td class="px-3 py-3 text-on-surface-variant text-[12px]">${r.phone}</td>
       <td class="px-3 py-3 text-on-surface-variant text-[12px]">${r.date}</td>
-      <td class="px-3 py-3 text-on-surface-variant text-[12px]">${r.wishdate||'—'}</td>
+      <td class="px-3 py-3 text-on-surface-variant text-[12px] whitespace-nowrap">${wishdateHtml(r.wishdate)}</td>
       <td class="px-3 py-3 text-[12px] text-on-surface-variant">—</td>
       <td class="px-3 py-3 text-[12px] max-w-[160px] truncate cursor-pointer" title="${r.product||''}" onclick="openDetail(${firstIdx})">
         <span class="text-[10px] font-bold text-on-surface-variant mr-1">${lines.length}개 상품</span>${r.product||'—'}
@@ -2488,9 +2804,17 @@ async function openDetail(idx){
   document.getElementById('modal-body').innerHTML=`
     <div class="flex justify-between items-center mb-3">
       <p class="text-[11px] text-on-surface-variant">섹션별 [수정] 버튼을 눌러야 해당 항목을 편집할 수 있습니다.</p>
-      <button onclick="copyForKakao('${r.recordId}')" class="bg-success-green/10 text-success-green hover:bg-success-green/20 transition-colors rounded-lg px-4 py-2 text-body-sm font-semibold flex items-center gap-2 whitespace-nowrap">
-        <span class="material-symbols-outlined text-[16px]">content_copy</span> 카톡 전달용 텍스트 복사
-      </button>
+      <div class="flex items-center gap-2">
+        <button onclick="copyForKakao('${r.recordId}')" class="bg-success-green/10 text-success-green hover:bg-success-green/20 transition-colors rounded-lg px-4 py-2 text-body-sm font-semibold flex items-center gap-2 whitespace-nowrap">
+          <span class="material-symbols-outlined text-[16px]">content_copy</span> 카톡 전달용 텍스트 복사
+        </button>
+        <button onclick="startReregister('${r.recordId}')" class="bg-internet-accent/10 text-internet-accent hover:bg-internet-accent/20 transition-colors rounded-lg px-4 py-2 text-body-sm font-semibold flex items-center gap-2 whitespace-nowrap">
+          <span class="material-symbols-outlined text-[16px]">restart_alt</span> 재등록
+        </button>
+        <button onclick="confirmDeleteRecord('${r.recordId}','${(r.name||'').replace(/'/g,"\\\\'")}')" class="bg-error/10 text-error hover:bg-error/20 transition-colors rounded-lg px-4 py-2 text-body-sm font-semibold flex items-center gap-2 whitespace-nowrap">
+          <span class="material-symbols-outlined text-[16px]">delete_forever</span> 삭제
+        </button>
+      </div>
     </div>
 
     ${buildSection('sec-basic','고객 기본 정보',[
@@ -2499,8 +2823,7 @@ async function openDetail(idx){
       {label:'주민번호(전체)',id:'modal-ssn',val:r.ssn},
       {label:'주소',id:'modal-addr',val:r.addr},
       {label:'아파트여부',id:'modal-apt',val:r.apt,type:'select',options:[{v:'N',t:'N'},{v:'Y',t:'Y'}]},
-      {label:'OSS',id:'modal-oss',val:r.oss,type:'select',options:[{v:'N',t:'N'},{v:'Y',t:'Y'}]},
-      {label:'원스톱',id:'modal-onestop',val:r.onestop,type:'select',options:[{v:'N',t:'N'},{v:'Y',t:'Y'}]},
+      {label:'원스톱(OSS)',id:'modal-onestop',val:r.onestop,type:'select',options:[{v:'N',t:'N'},{v:'Y',t:'Y'}]},
       {label:'기존통신사',id:'modal-existingcarrier',val:r.existingCarrier},
       {label:'본인인증 유형',id:'modal-authtype',val:r.authType,type:'select',options:[{v:'신분증',t:'신분증'},{v:'주민등록증',t:'주민등록증'},{v:'운전면허증',t:'운전면허증'}]},
       {label:'본인인증 값',id:'modal-authvalue',val:r.authValue}
@@ -2550,8 +2873,10 @@ async function openDetail(idx){
 
     ${buildSection('sec-gift','정산 / 사은품',[
       {label:'현금사은품(원)',id:'modal-gift',val:r.gift},
+      {label:'현금사은품 구분',id:'modal-gifttype',val:r.giftType||'사은품',type:'select',options:[{v:'사은품',t:'사은품'},{v:'S머니',t:'S머니'}]},
+      {label:'S머니 연락처',id:'modal-giftsmoneyphone',val:r.giftSmoneyPhone},
       {label:'현물사은품',id:'modal-giftitem',val:r.giftItem},
-      {label:'사은품 휴대폰번호',id:'modal-giftphone',val:r.giftPhone},
+      {label:'현물사은품 휴대폰번호',id:'modal-giftphone',val:r.giftPhone},
       {label:'지급은행',id:'modal-gbank',val:r.gbank},
       {label:'지급계좌',id:'modal-gacct',val:r.gacct},
       {label:'지급예금주',id:'modal-gpayer',val:r.gpayer},
@@ -2743,13 +3068,13 @@ function copyForKakao(recordId){
   if(r.relation&&r.relation!=='본인'&&r.payerBirth) lines.push('예금주 생년월일 : '+r.payerBirth);
   lines.push('사은품 계좌 : '+(r.gbank===r.bank&&r.gacct===r.acct?'상동':((r.gbank||'')+'/'+(r.gpayer||'')+'/'+(r.gacct||''))));
   var giftParts=[];
-  if(r.gift) giftParts.push('현금'+(parseInt(r.gift)/10000)+'');
+  if(r.gift) giftParts.push('현금'+(parseInt(r.gift)/10000)+'('+(r.giftType||'사은품')+')');
   if(r.giftItem) giftParts.push(r.giftItem);
   lines.push('사은품 : '+giftParts.join(' + ')+(r.giftDaenap?' / 대납부탁드립니다':''));
-  if(r.giftPhone) lines.push('사은품수령번호 : '+r.giftPhone);
+  if(r.giftType==='S머니'&&r.giftSmoneyPhone) lines.push('S머니 연락처 : '+r.giftSmoneyPhone);
+  if(r.giftPhone) lines.push('현물사은품 휴대폰번호 : '+r.giftPhone);
   if(r.authType) lines.push('인증방법 : '+r.authType+(r.authValue?('/'+r.authValue):''));
-  lines.push('OSS : '+(r.oss||'N')+(r.oss==='Y'?(' ('+(r.ossAsap?'설치 후 익일해지':('해지요청일 '+(r.ossTermDate||'미기입')))+')'):''));
-  if(r.onestop==='Y') lines.push('원스톱 : Y (기존통신사 : '+(r.existingCarrier||'미기입')+')');
+  lines.push('원스톱(OSS) : '+(r.onestop||'N')+(r.onestop==='Y'?(' (기존통신사 '+(r.existingCarrier||'미기입')+' / '+(r.ossAsap?'설치 후 익일해지':('해지요청일 '+(r.ossTermDate||'미기입')))+')'):''));
   lines.push('아파트 : '+(r.apt||'N'));
   lines.push('설치희망일 : '+(r.wishdate||''));
   lines_of_record.forEach(function(ld){
@@ -2782,6 +3107,7 @@ function fallbackCopy(text){
 }
 
 var curModalIdx=-1;
+window._reregisterRecordId = null; // 재등록 모드일 때 덮어쓸 기존 recordId
 async function openModal(idx){
   // 간소 모달: 상태변경 + 이력만 (r은 클릭한 회선 하나)
   curModalIdx=idx; var r=curRecs[idx];
@@ -2893,8 +3219,8 @@ async function saveModal(){
     headerUpdate.ssn=g('modal-ssn');
     headerUpdate.addr=g('modal-addr');
     headerUpdate.apt=g('modal-apt');
-    headerUpdate.oss=g('modal-oss');
     headerUpdate.onestop=g('modal-onestop');
+    headerUpdate.oss=headerUpdate.onestop;
     headerUpdate.existingCarrier=g('modal-existingcarrier');
     headerUpdate.authType=g('modal-authtype');
     headerUpdate.authValue=g('modal-authvalue');
@@ -2910,6 +3236,8 @@ async function saveModal(){
     var wishdateAsap = document.getElementById('modal-wishdate-asap') ? document.getElementById('modal-wishdate-asap').checked : false;
     headerUpdate.wishdate = (wishdateVal||'') + (wishdateAsap ? ' 최대한빠르게' : '');
     headerUpdate.gift=g('modal-gift');
+    headerUpdate.giftType=g('modal-gifttype');
+    headerUpdate.giftSmoneyPhone=g('modal-giftsmoneyphone');
     headerUpdate.giftItem=g('modal-giftitem');
     headerUpdate.giftPhone=g('modal-giftphone');
     headerUpdate.gbank=g('modal-gbank');
@@ -2929,6 +3257,50 @@ async function saveModal(){
 }
 function closeModal(){document.getElementById('modal-overlay').classList.add('hidden');document.getElementById('modal-overlay').classList.remove('flex'); curModalIdx=-1;}
 function closeModalOut(e){if(e.target===document.getElementById('modal-overlay'))closeModal();}
+
+// 접수건 삭제 — 실수 방지를 위해 "삭제"를 직접 입력해야만 진행됨
+function confirmDeleteRecord(recordId, name){
+  document.getElementById('modal-title').textContent = '접수건 삭제 — ' + name + ' 님';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="bg-error/5 border border-error/30 rounded-lg p-5">
+      <p class="text-body-sm text-error font-semibold mb-2">⚠ 이 작업은 되돌릴 수 없습니다.</p>
+      <p class="text-body-sm text-on-surface-variant mb-4">${name} 님의 접수건과 회선정보, 이력, 첨부파일이 전부 삭제됩니다. 계속하려면 아래 칸에 <b>삭제</b>라고 정확히 입력하세요.</p>
+      <input type="text" id="delete-confirm-input" placeholder="여기에 '삭제' 입력" class="w-full border border-error/40 rounded px-3 py-2 text-body-sm outline-none focus:border-error mb-4">
+      <div class="flex justify-end gap-2">
+        <button onclick="closeModal()" class="px-4 py-2 rounded-lg border border-border-subtle text-body-sm font-medium hover:bg-surface-container-low transition-colors">취소</button>
+        <button onclick="executeDeleteRecord('${recordId}')" class="px-5 py-2 rounded-lg bg-error text-on-error font-medium hover:bg-error/90 transition-colors flex items-center gap-2">
+          <span class="material-symbols-outlined text-[18px]">delete_forever</span> 완전히 삭제
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+async function executeDeleteRecord(recordId){
+  var input = document.getElementById('delete-confirm-input');
+  if(!input || input.value.trim() !== '삭제'){
+    showToast('"삭제"라고 정확히 입력해야 진행됩니다.');
+    return;
+  }
+
+  // 첨부파일 실물 삭제 (Storage)
+  const { data: files } = await sb.from('files').select('storage_path').eq('record_id', recordId);
+  if(files && files.length){
+    await sb.storage.from('attachments').remove(files.map(function(f){return f.storage_path;}));
+  }
+
+  // 자식 테이블부터 순서대로 삭제
+  await sb.from('histories').delete().eq('record_id', recordId);
+  await sb.from('files').delete().eq('record_id', recordId);
+  await sb.from('record_lines').delete().eq('record_id', recordId);
+  const { error } = await sb.from('records').delete().eq('id', recordId);
+
+  if(error){ showToast('삭제 실패: ' + error.message); return; }
+
+  closeModal();
+  await renderTable();
+  showToast('접수건이 삭제되었습니다.');
+}
 
 function exportExcel(){
   var data=curRecs.length?curRecs:allLines;
