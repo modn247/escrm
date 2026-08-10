@@ -317,45 +317,23 @@
         <h3 class="font-headline-md text-headline-md text-primary mb-6 flex items-center gap-2">
           <span class="material-symbols-outlined">redeem</span> 정산 / 사은품
         </h3>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           <div class="flex flex-col gap-1">
             <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">현금 사은품 (원)</label>
             <input id="f-gift" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all" placeholder="0" type="text" oninput="fmtNumber(this)"/>
           </div>
           <div class="flex flex-col gap-1">
-            <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">현금사은품 구분</label>
-            <select id="f-gift-type" onchange="toggleGiftSmoneyPhone()" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all bg-surface-container-lowest">
-              <option value="사은품">사은품</option><option value="S머니">S머니</option>
-            </select>
-          </div>
-          <div id="gift-smoney-phone-wrap" class="hidden flex flex-col gap-1">
             <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">S머니 연락처</label>
-            <input id="f-gift-smoney-phone" oninput="if(document.getElementById('same-gift-phones').checked){document.getElementById('f-gift-phone').value=this.value;}" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all" placeholder="010-0000-0000" type="text" maxlength="13"/>
+            <input id="f-gift-smoney-phone" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all" placeholder="010-0000-0000" type="text" maxlength="13"/>
           </div>
-          <div class="flex flex-col gap-1">
-            <label class="flex items-center gap-2 cursor-pointer w-max mt-6">
-              <input id="f-gift-daenap" class="rounded border-outline-variant text-secondary focus:ring-secondary w-4 h-4 cursor-pointer" type="checkbox"/>
-              <span class="font-body-sm text-body-sm text-secondary font-semibold">대납 요청 (영업점 선지급)</span>
-            </label>
-          </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6 pt-4 border-t border-border-subtle border-dashed">
-          <div class="flex flex-col gap-1">
-            <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">현물 사은품</label>
-            <input id="f-gift-item" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all" placeholder="예: 스카이쿠폰 5만원" type="text"/>
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">현물사은품 휴대폰번호</label>
-            <input id="f-gift-phone" class="w-full border border-border-subtle rounded text-body-md text-on-surface px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/12 focus:border-primary transition-all" placeholder="010-0000-0000" type="text" maxlength="13"/>
-          </div>
-          <div class="flex flex-col gap-2 md:col-span-2 justify-end pb-2">
+          <div class="flex flex-col gap-1 md:col-span-2 justify-end pb-2">
             <label class="flex items-center gap-2 cursor-pointer w-max">
               <input id="same-gift-bank" onchange="toggleSameGiftBank()" class="rounded border-outline-variant text-primary focus:ring-primary w-4 h-4 cursor-pointer" type="checkbox"/>
               <span class="font-body-sm text-body-sm text-on-surface-variant">위 납부 은행정보와 동일</span>
             </label>
             <label class="flex items-center gap-2 cursor-pointer w-max">
-              <input id="same-gift-phones" onchange="toggleSameGiftPhones()" class="rounded border-outline-variant text-primary focus:ring-primary w-4 h-4 cursor-pointer" type="checkbox"/>
-              <span class="font-body-sm text-body-sm text-on-surface-variant">S머니 연락처와 현물사은품 연락처 동일</span>
+              <input id="f-gift-daenap" class="rounded border-outline-variant text-secondary focus:ring-secondary w-4 h-4 cursor-pointer" type="checkbox"/>
+              <span class="font-body-sm text-body-sm text-secondary font-semibold">대납 요청 (영업점 선지급)</span>
             </label>
           </div>
         </div>
@@ -649,30 +627,6 @@ function toggleSameGiftPayer(){
   var cb=document.getElementById('same-gift-payer'), el=document.getElementById('f-gpayer');
   if(cb.checked){el.value=document.getElementById('f-name').value||'';el.readOnly=true;el.classList.add('bg-surface-muted','text-on-surface-variant');}
   else{el.readOnly=false;el.classList.remove('bg-surface-muted','text-on-surface-variant');}
-}
-// 현금사은품 구분(사은품/S머니)에 따라 S머니 연락처 입력칸 토글
-function toggleGiftSmoneyPhone(){
-  var v=document.getElementById('f-gift-type').value;
-  var wrap=document.getElementById('gift-smoney-phone-wrap');
-  if(v==='S머니'){wrap.classList.remove('hidden');}
-  else{
-    wrap.classList.add('hidden');
-    document.getElementById('f-gift-smoney-phone').value='';
-    document.getElementById('same-gift-phones').checked=false;
-    toggleSameGiftPhones();
-  }
-}
-// S머니 연락처 = 현물사은품 연락처 동일 토글
-function toggleSameGiftPhones(){
-  var cb=document.getElementById('same-gift-phones');
-  var smoneyEl=document.getElementById('f-gift-smoney-phone');
-  var itemEl=document.getElementById('f-gift-phone');
-  if(cb.checked){
-    itemEl.value=smoneyEl.value||'';
-    itemEl.readOnly=true; itemEl.classList.add('bg-surface-muted','text-on-surface-variant');
-  } else {
-    itemEl.readOnly=false; itemEl.classList.remove('bg-surface-muted','text-on-surface-variant');
-  }
 }
 function updatePayLabels(){
   var v=document.getElementById('f-paymethod').value;
@@ -1493,15 +1447,20 @@ function parseInput(){
     else if(manMatch2){giftAmount=parseInt(manMatch2[1])*10000;giftMatched=manMatch2[0];}
     if(giftAmount>0){
       document.getElementById('f-gift').value=giftAmount.toLocaleString();
-      if(giftTextOnly.indexOf('S머니')>=0||giftTextOnly.toUpperCase().indexOf('SMONEY')>=0){
-        document.getElementById('f-gift-type').value='S머니';
-        toggleGiftSmoneyPhone();
-      }
       filled.push('현금사은품');
     }
-    // 현물 사은품(스카이쿠폰 등) — 현물 입력칸에 직접 기입
-    var giftRemain=giftTextOnly.replace(giftMatched,'').replace(/S머니/gi,'').replace(/SMONEY/gi,'').replace(/^\s*\+?\s*/,'').replace(/\s*\+?\s*$/,'').replace(/^\+|\+$/g,'').trim();
-    // "대납부탁드립니다" 등 대납 키워드는 별도 처리하고 현물에서 제외
+    // "S머니" 뒤에 붙은 연락처(있으면) 자동 반영, 나머지 잔여텍스트는 비고 확인란으로
+    var giftRemain=giftTextOnly.replace(giftMatched,'').replace(/^\s*\+?\s*/,'').replace(/\s*\+?\s*$/,'').replace(/^\+|\+$/g,'').trim();
+    var smoneyMatch=giftRemain.match(/S머니\s*(01[0-9][0-9\- ]{7,12})/i);
+    if(smoneyMatch){
+      var smNum=smoneyMatch[1].replace(/[^0-9]/g,'');
+      if(smNum.length>=10) document.getElementById('f-gift-smoney-phone').value=smNum.slice(0,3)+'-'+smNum.slice(3,7)+'-'+smNum.slice(7,11);
+      giftRemain=giftRemain.replace(smoneyMatch[0],'').trim();
+      filled.push('S머니 연락처');
+    } else {
+      giftRemain=giftRemain.replace(/S머니/gi,'').replace(/SMONEY/gi,'').trim();
+    }
+    // "대납부탁드립니다" 등 대납 키워드는 별도 처리
     var daenapKeywords=['대납','대납부탁','대납요청'];
     var hasDaenap=daenapKeywords.some(function(k){return giftMainLine.indexOf(k)>=0;})||(giftMainLine.indexOf('/')>=0&&giftMainLine.split('/').some(function(s){return daenapKeywords.some(function(k){return s.indexOf(k)>=0;});}));
     if(hasDaenap){
@@ -1510,23 +1469,21 @@ function parseInput(){
       daenapKeywords.forEach(function(k){giftRemain=giftRemain.replace(k,'').trim();});
     }
     if(giftRemain&&giftRemain.length>1){
-      document.getElementById('f-gift-item').value=giftRemain;
-      filled.push('현물사은품');
+      unresolved.push('사은품 확인필요: '+giftRemain);
     }
   }
 
-  // ── 사은품 수령번호 (휴대폰번호, "동일" 처리 포함) ──
-  var giftPhoneRaw=getVal(['사은품수령번호','사은품 수령번호','사은품휴대폰','사은품 휴대폰']);
-  if(giftPhoneRaw){
-    if(giftPhoneRaw.indexOf('동일')>=0){
-      // 연락처와 동일
-      var phoneVal=document.getElementById('f-phone').value;
-      if(phoneVal){document.getElementById('f-gift-phone').value=phoneVal;filled.push('사은품휴대폰번호(연락처 동일)');}
+  // ── S머니 연락처 (별도 키워드로 쓴 경우) ──
+  var smoneyPhoneRaw=getVal(['s머니연락처','s머니 연락처','smoney연락처','smoney 연락처']);
+  if(smoneyPhoneRaw){
+    if(smoneyPhoneRaw.indexOf('동일')>=0){
+      var phoneVal2=document.getElementById('f-phone').value;
+      if(phoneVal2){document.getElementById('f-gift-smoney-phone').value=phoneVal2;filled.push('S머니 연락처(연락처 동일)');}
     } else {
-      var gpnum=giftPhoneRaw.replace(/[^0-9]/g,'');
-      if(gpnum.length>=10){
-        document.getElementById('f-gift-phone').value=gpnum.slice(0,3)+'-'+gpnum.slice(3,7)+'-'+gpnum.slice(7,11);
-        filled.push('사은품휴대폰번호');
+      var gpnum2=smoneyPhoneRaw.replace(/[^0-9]/g,'');
+      if(gpnum2.length>=10){
+        document.getElementById('f-gift-smoney-phone').value=gpnum2.slice(0,3)+'-'+gpnum2.slice(3,7)+'-'+gpnum2.slice(7,11);
+        filled.push('S머니 연락처');
       }
     }
   }
@@ -1822,8 +1779,7 @@ function dbToRecord(row){
     branchName: row.branches ? row.branches.branch_name : null,
     wishdate: row.wishdate,
     priceBefore: row.price_before, priceAfter: row.price_after,
-    gift: row.gift, giftType: row.gift_type||'사은품', giftItem: row.gift_item, giftPhone: row.gift_phone,
-    giftSmoneyPhone: row.gift_smoney_phone, giftDaenap: row.gift_daenap,
+    gift: row.gift, giftSmoneyPhone: row.gift_smoney_phone, giftDaenap: row.gift_daenap,
     gbank: row.gbank, gacct: row.gacct, gpayer: row.gpayer,
     memo: row.memo, date: row.created_at ? row.created_at.slice(0,10) : ''
   };
@@ -1856,9 +1812,6 @@ function recordToDb(rec){
   if('priceBefore' in rec) out.price_before = rec.priceBefore ? Number(rec.priceBefore) : null;
   if('priceAfter' in rec) out.price_after = rec.priceAfter ? Number(rec.priceAfter) : null;
   if('gift' in rec) out.gift = rec.gift ? Number(rec.gift) : null;
-  if('giftItem' in rec) out.gift_item = rec.giftItem;
-  if('giftType' in rec) out.gift_type = rec.giftType;
-  if('giftPhone' in rec) out.gift_phone = rec.giftPhone;
   if('giftSmoneyPhone' in rec) out.gift_smoney_phone = rec.giftSmoneyPhone;
   if('giftDaenap' in rec) out.gift_daenap = rec.giftDaenap;
   if('gbank' in rec) out.gbank = rec.gbank;
@@ -2222,11 +2175,7 @@ async function prefillFormFromRecord(recordId){
 
   // 사은품
   if(r.gift) document.getElementById('f-gift').value=Number(r.gift).toLocaleString();
-  setSelectVal(document.getElementById('f-gift-type'), r.giftType||'사은품');
-  toggleGiftSmoneyPhone();
-  if(r.giftType==='S머니') document.getElementById('f-gift-smoney-phone').value=r.giftSmoneyPhone||'';
-  document.getElementById('f-gift-item').value=r.giftItem||'';
-  document.getElementById('f-gift-phone').value=r.giftPhone||'';
+  document.getElementById('f-gift-smoney-phone').value=r.giftSmoneyPhone||'';
   document.getElementById('f-gift-daenap').checked=!!r.giftDaenap;
   setSelectVal(document.getElementById('f-gbank'), r.gbank);
   document.getElementById('f-gacct').value=r.gacct||'';
@@ -2333,10 +2282,7 @@ async function submitForm(){
     relation:document.getElementById('f-relation').value,
     payerBirth:document.getElementById('f-relation').value!=='본인'?document.getElementById('f-payer-birth').value.trim():'',
     gift:document.getElementById('f-gift').value.replace(/,/g,''),
-    giftType:document.getElementById('f-gift-type').value,
-    giftItem:document.getElementById('f-gift-item').value.trim(),
-    giftPhone:document.getElementById('f-gift-phone').value.trim(),
-    giftSmoneyPhone:document.getElementById('f-gift-type').value==='S머니'?document.getElementById('f-gift-smoney-phone').value.trim():'',
+    giftSmoneyPhone:document.getElementById('f-gift-smoney-phone').value.trim(),
     giftDaenap:document.getElementById('f-gift-daenap').checked,
     gbank:document.getElementById('f-gbank').value,
     gacct:document.getElementById('f-gacct').value,
@@ -2459,12 +2405,8 @@ async function sendTelegramNotification(recordId, headerRec, lines){
   }
   if(headerRec.relation&&headerRec.relation!=='본인') msgLines.push('예금주와의 관계 : ' + headerRec.relation);
   msgLines.push('사은품 계좌 : ' + (headerRec.gbank===headerRec.bank&&headerRec.gacct===headerRec.acct?'상동':((headerRec.gbank||'')+'/'+(headerRec.gpayer||'')+'/'+(headerRec.gacct||''))));
-  var giftParts=[];
-  if(headerRec.gift) giftParts.push('현금'+(parseInt(headerRec.gift)/10000)+'('+(headerRec.giftType||'사은품')+')');
-  if(headerRec.giftItem) giftParts.push(headerRec.giftItem);
-  if(giftParts.length>0) msgLines.push('사은품 : ' + giftParts.join(' + ') + (headerRec.giftDaenap?' / 대납부탁드립니다':''));
-  if(headerRec.giftType==='S머니'&&headerRec.giftSmoneyPhone) msgLines.push('S머니 연락처 : ' + headerRec.giftSmoneyPhone);
-  if(headerRec.giftPhone) msgLines.push('현물사은품 휴대폰번호 : ' + headerRec.giftPhone);
+  if(headerRec.gift) msgLines.push('사은품 : 현금'+(parseInt(headerRec.gift)/10000)+'만원' + (headerRec.giftDaenap?' / 대납부탁드립니다':''));
+  if(headerRec.giftSmoneyPhone) msgLines.push('S머니 연락처 : ' + headerRec.giftSmoneyPhone);
   if(headerRec.authType) msgLines.push('인증방법 : ' + headerRec.authType + (headerRec.authValue?('/'+headerRec.authValue):''));
   msgLines.push('원스톱(OSS) : ' + (headerRec.onestop||'N') + (headerRec.onestop==='Y'?(' (기존통신사 '+(headerRec.existingCarrier||'미기입')+' / '+(headerRec.ossAsap?'설치 후 익일해지':('해지요청일 '+(headerRec.ossTermDate||'미기입')))+')'):''));
   msgLines.push('설치희망일 : ' + (headerRec.wishdate||''));
@@ -2882,10 +2824,7 @@ async function openDetail(idx){
 
     ${buildSection('sec-gift','정산 / 사은품',[
       {label:'현금사은품(원)',id:'modal-gift',val:r.gift},
-      {label:'현금사은품 구분',id:'modal-gifttype',val:r.giftType||'사은품',type:'select',options:[{v:'사은품',t:'사은품'},{v:'S머니',t:'S머니'}]},
       {label:'S머니 연락처',id:'modal-giftsmoneyphone',val:r.giftSmoneyPhone},
-      {label:'현물사은품',id:'modal-giftitem',val:r.giftItem},
-      {label:'현물사은품 휴대폰번호',id:'modal-giftphone',val:r.giftPhone},
       {label:'지급은행',id:'modal-gbank',val:r.gbank},
       {label:'지급계좌',id:'modal-gacct',val:r.gacct},
       {label:'지급예금주',id:'modal-gpayer',val:r.gpayer},
@@ -3076,12 +3015,8 @@ function copyForKakao(recordId){
   if(r.relation&&r.relation!=='본인') lines.push('예금주와의 관계 : '+r.relation);
   if(r.relation&&r.relation!=='본인'&&r.payerBirth) lines.push('예금주 생년월일 : '+r.payerBirth);
   lines.push('사은품 계좌 : '+(r.gbank===r.bank&&r.gacct===r.acct?'상동':((r.gbank||'')+'/'+(r.gpayer||'')+'/'+(r.gacct||''))));
-  var giftParts=[];
-  if(r.gift) giftParts.push('현금'+(parseInt(r.gift)/10000)+'('+(r.giftType||'사은품')+')');
-  if(r.giftItem) giftParts.push(r.giftItem);
-  lines.push('사은품 : '+giftParts.join(' + ')+(r.giftDaenap?' / 대납부탁드립니다':''));
-  if(r.giftType==='S머니'&&r.giftSmoneyPhone) lines.push('S머니 연락처 : '+r.giftSmoneyPhone);
-  if(r.giftPhone) lines.push('현물사은품 휴대폰번호 : '+r.giftPhone);
+  if(r.gift) lines.push('사은품 : 현금'+(parseInt(r.gift)/10000)+'만원'+(r.giftDaenap?' / 대납부탁드립니다':''));
+  if(r.giftSmoneyPhone) lines.push('S머니 연락처 : '+r.giftSmoneyPhone);
   if(r.authType) lines.push('인증방법 : '+r.authType+(r.authValue?('/'+r.authValue):''));
   lines.push('원스톱(OSS) : '+(r.onestop||'N')+(r.onestop==='Y'?(' (기존통신사 '+(r.existingCarrier||'미기입')+' / '+(r.ossAsap?'설치 후 익일해지':('해지요청일 '+(r.ossTermDate||'미기입')))+')'):''));
   lines.push('아파트 : '+(r.apt||'N'));
@@ -3245,10 +3180,7 @@ async function saveModal(){
     var wishdateAsap = document.getElementById('modal-wishdate-asap') ? document.getElementById('modal-wishdate-asap').checked : false;
     headerUpdate.wishdate = (wishdateVal||'') + (wishdateAsap ? ' 최대한빠르게' : '');
     headerUpdate.gift=g('modal-gift');
-    headerUpdate.giftType=g('modal-gifttype');
     headerUpdate.giftSmoneyPhone=g('modal-giftsmoneyphone');
-    headerUpdate.giftItem=g('modal-giftitem');
-    headerUpdate.giftPhone=g('modal-giftphone');
     headerUpdate.gbank=g('modal-gbank');
     headerUpdate.gacct=g('modal-gacct');
     headerUpdate.gpayer=g('modal-gpayer');
@@ -3313,7 +3245,7 @@ async function executeDeleteRecord(recordId){
 
 function exportExcel(){
   var data=curRecs.length?curRecs:allLines;
-  var h=['영업점코드','설치점코드','접수번호','가입계약번호','고객명','연락처','회선구분','상품명','약정','접수일','설치희망일','개통일','상태','설치비감액쿠폰','요금할인쿠폰(월)','현금사은품','현물사은품','대납여부'];
+  var h=['영업점코드','설치점코드','접수번호','가입계약번호','고객명','연락처','회선구분','상품명','약정','접수일','설치희망일','개통일','상태','설치비감액쿠폰','요금할인쿠폰(월)','현금사은품','S머니연락처','대납여부'];
   var rows=data.map(r=>[
     r.branchCode||'', r.installCode||'',
     r.receiptNo||'', r.contractNo||'', r.name, r.phone,
@@ -3321,7 +3253,7 @@ function exportExcel(){
     r.date, r.wishdate||'', r.openDate||'', r.status,
     (r.installCoupon&&r.installCoupon.checked)?(r.installCoupon.amt||''):'',
     (r.rateCoupon&&r.rateCoupon.checked)?(r.rateCoupon.amt||''):'',
-    r.gift||'', r.giftItem||'', r.giftDaenap?'대납':''
+    r.gift||'', r.giftSmoneyPhone||'', r.giftDaenap?'대납':''
   ]);
   var csv=[h].concat(rows).map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
