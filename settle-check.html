@@ -308,11 +308,48 @@ function parseProductTiers(raw){
   return { core, billing, addons: addons.join(',') };
 }
 
-function coreProductEqual(settleCore, crmProd, crmContractPeriod){
-  // 느슨한 포함비교: 공백/대소문자 무시하고 핵심 토큰들이 서로 포함관계인지
+// 정산서(스카이라이프)는 등급명("기가 200"/"기가 콤팩트"/"인터넷"), CRM은 속도표기("SKY 500M")를 써서
+// 같은 상품인데 문자열이 전혀 안 겹치는 경우가 많음 — 속도등급으로 정규화해서 비교
+function extractSpeedTier(str){
+  const s = (str||'').toString().toLowerCase().replace(/\s/g,'');
+  if(!s) return null;
+  if(/콤팩트/.test(s)) return '500M';
+  if(/200/.test(s)) return '200M';
+  if(/500/.test(s)) return '500M';
+  if(/1g\b|1gb/.test(s)) return '1G';
+  if(/기가/.test(s) && /인터넷/.test(s)) return '1G'; // "기가 인터넷" (숫자 없이 기가+인터넷만 있는 경우)
+  if(/인터넷/.test(s)) return '100M'; // "Sky 인터넷" 단독 표기
+  if(/100/.test(s)) return '100M';
+  return null;
+}
+
+// TV 상품명도 정산서(영문 Basic/Plus)와 CRM(한글 베이직/플러스)이 다른 문자체계라 매핑
+const TV_TIER_SYNONYMS = [
+  { pat: /basic/i, ko: '베이직' },
+  { pat: /plus/i, ko: '플러스' }
+];
+
+function coreProductEqual(settleCore, crmProd, crmContractPeriod, kind){
   const a = settleCore.toLowerCase().replace(/\s/g,'');
   const b = ((crmProd||'')+' '+(crmContractPeriod||'')).toLowerCase().replace(/\s/g,'');
   if(!a || !b) return null; // 비교불가
+
+  if(kind === 'inet'){
+    const settleTier = extractSpeedTier(settleCore);
+    const crmTier = extractSpeedTier(crmProd);
+    if(settleTier && crmTier) return settleTier === crmTier;
+    // 등급 추출이 안 되면(예외적 표기) 기존 느슨매칭으로 폴백
+  }
+
+  if(kind === 'tv'){
+    for(const syn of TV_TIER_SYNONYMS){
+      if(syn.pat.test(settleCore)){
+        return crmProd ? crmProd.indexOf(syn.ko) >= 0 : null;
+      }
+    }
+  }
+
+  // 폴백: 느슨한 포함비교
   return a.indexOf(b.slice(0,6)) >= 0 || b.indexOf(a.slice(0,6)) >= 0;
 }
 
@@ -372,7 +409,7 @@ function fuzzyMatchLine(settleRow, candidates, tiers){
 
     // 상품 유사도 — 한 고객이 같은 종류 회선을 여러 개(2nd TV 등) 가진 경우 구분하는 타이브레이커
     if(tiers){
-      const eq = coreProductEqual(tiers.core, c.prod, c.contractPeriod);
+      const eq = coreProductEqual(tiers.core, c.prod, c.contractPeriod, c.kind);
       if(eq === true) score += 1;
     }
 
@@ -497,7 +534,7 @@ function runMatching(rows){
     }
 
     // 상품 비교 (핵심상품 + 과금유형 + 부가옵션 전부 일치해야 함)
-    const coreEq = coreProductEqual(tiers.core, matched.prod, matched.contractPeriod);
+    const coreEq = coreProductEqual(tiers.core, matched.prod, matched.contractPeriod, matched.kind);
     if(coreEq === false){
       rowErrors.push({ type:'error', reason:'핵심 상품명 불일치', settleVal: tiers.core, crmVal: (matched.prod||'')+' '+(matched.contractPeriod||'') });
     }
