@@ -342,18 +342,48 @@ function addrMatch(a, b){
   return an.slice(0,len) === bn.slice(0,len);
 }
 
-function fuzzyMatchLine(settleRow, candidates){
+function fuzzyMatchLine(settleRow, candidates, tiers){
   // candidates: 아직 매칭 안 된 CRM 라인들
-  let best = null, bestScore = 0;
+  // 계약번호가 거의 안 채워지는 현실을 감안해, 퍼지매칭이 사실상 주 매칭수단이 되는 경우를 위해
+  // 이름/생년월일/주소 외에 개통일 근접도, 상품 유사도까지 같이 봐서 정확도를 높임
+  let best = null, bestScore = 0, bestStrongBirth = false;
   candidates.forEach(function(c){
     let score = 0;
-    if(nameMatch(settleRow.name, c.name)) score++;
-    const sYm = yearMonthFromSsn(settleRow.ssn), cYm = yearMonthFromSsn(c.ssn);
-    if(sYm && cYm && sYm === cYm) score++;
-    if(addrMatch(settleRow.addr, c.addr)) score++;
-    if(score > bestScore){ bestScore = score; best = c; }
+    if(nameMatch(settleRow.name, c.name)) score += 1;
+
+    // 생년월일 — 마스킹 안 된 경우(6자리 다 있음) 일자까지 정밀비교, 마스킹된 경우 년월만
+    const sDigits = (settleRow.ssn||'').toString().replace(/\D/g,'');
+    const cDigits = (c.ssn||'').toString().replace(/\D/g,'');
+    let strongBirth = false;
+    if(sDigits.length>=6 && cDigits.length>=6 && !/\*/.test(settleRow.ssn||'') && !/\*/.test(c.ssn||'') && sDigits.slice(0,6)===cDigits.slice(0,6)){
+      score += 2; strongBirth = true;
+    } else {
+      const sYm = yearMonthFromSsn(settleRow.ssn), cYm = yearMonthFromSsn(c.ssn);
+      if(sYm && cYm && sYm === cYm) score += 1;
+    }
+
+    if(addrMatch(settleRow.addr, c.addr)) score += 1;
+
+    // 개통일 근접도 (±15일 이내면 약한 보조점수 — 다른 신호로 압축된 후보 중 최종 선별용)
+    if(settleRow.openDate && c.openDate){
+      const d1=new Date(settleRow.openDate), d2=new Date(c.openDate);
+      if(!isNaN(d1) && !isNaN(d2) && Math.abs(d1-d2)/86400000 <= 15) score += 0.5;
+    }
+
+    // 상품 유사도 — 한 고객이 같은 종류 회선을 여러 개(2nd TV 등) 가진 경우 구분하는 타이브레이커
+    if(tiers){
+      const eq = coreProductEqual(tiers.core, c.prod, c.contractPeriod);
+      if(eq === true) score += 1;
+    }
+
+    if(score > bestScore){ bestScore = score; best = c; bestStrongBirth = strongBirth; }
   });
-  return bestScore >= 2 ? { line: best, score: bestScore } : (bestScore === 1 ? { line: best, score: bestScore, weak:true } : null);
+  if(!best) return null;
+  // 생년월일이 일자까지 정확히 맞았으면 그것만으로도 신뢰도 높음 — 이름/주소 중 하나만 더 맞아도 확정
+  if(bestStrongBirth && bestScore >= 3) return { line: best, score: bestScore };
+  if(bestScore >= 2.5) return { line: best, score: bestScore };
+  if(bestScore >= 1) return { line: best, score: bestScore, weak: true };
+  return null;
 }
 
 function runMatching(rows){
@@ -393,9 +423,12 @@ function runMatching(rows){
     if(!contractNo) continue; // 계약번호 자체가 없는 잡행은 스킵
 
     const isReceiptNumRow = /^\d{9,}$/.test(aVal.replace(/\D/g,'')) && aVal.replace(/\D/g,'').length >= 9;
+    // 회선종류 추정: 인터넷영업수수료 행 = 인터넷, 접수번호(숫자) 행 = TV/사은품형
+    const inferredKind = aVal === '인터넷영업수수료' ? 'inet' : (isReceiptNumRow ? 'tv' : '');
 
     settleRows.push({
       isOneStop: aVal === ONESTOP_LABEL,
+      kind: inferredKind,
       receiptNo: isReceiptNumRow ? aVal : '',
       contractNo: contractNo,
       name: row[idx.custName],
@@ -416,17 +449,24 @@ function runMatching(rows){
   const results = [];
 
   settleRows.forEach(function(sr){
+    const tiers = parseProductTiers(sr.event);
+
     // 1) 계약번호 정확 매칭
     let matched = crmCandidates.find(function(c){
       return !usedCrmLineIds.has(c.lineId) && normContractNo(c.contractNo) === normContractNo(sr.contractNo);
     });
     let matchMethod = matched ? 'contract' : null;
 
-    // 2) 실패 시 퍼지매칭
+    // 2) 실패 시 퍼지매칭 — 회선종류(인터넷/TV)를 알 수 있으면 그것부터 좁혀서 후보를 만듦
+    //    (한 고객이 인터넷+TV를 같이 접수한 경우 이름/생년월일/주소가 동일해서 종류 구분 없이는 엉뚱한 회선과 매칭될 수 있음)
     let fuzzyWeak = false;
     if(!matched){
-      const pool = crmCandidates.filter(function(c){ return !usedCrmLineIds.has(c.lineId); });
-      const fz = fuzzyMatchLine(sr, pool);
+      let pool = crmCandidates.filter(function(c){ return !usedCrmLineIds.has(c.lineId); });
+      if(sr.kind){
+        const sameKindPool = pool.filter(function(c){ return c.kind === sr.kind; });
+        if(sameKindPool.length > 0) pool = sameKindPool;
+      }
+      const fz = fuzzyMatchLine(sr, pool, tiers);
       if(fz){ matched = fz.line; matchMethod = 'fuzzy'; fuzzyWeak = !!fz.weak; }
     }
 
@@ -445,7 +485,6 @@ function runMatching(rows){
 
     if(sr.isOneStop) return; // 원스톱은 매칭만 확인, 상품/아파트 등 세부검사 생략
 
-    const tiers = parseProductTiers(sr.event);
     const rowErrors = [];
 
     // 계약번호 불일치 (퍼지매칭으로 잡힌 경우 계약번호 자체가 다르다는 뜻)
