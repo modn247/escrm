@@ -3245,7 +3245,7 @@ async function executeDeleteRecord(recordId){
 
 function exportExcel(){
   var data=curRecs.length?curRecs:allLines;
-  var h=['영업점코드','설치점코드','접수번호','가입계약번호','고객명','연락처','회선구분','상품명','약정','접수일','설치희망일','개통일','상태','설치비감액쿠폰','요금할인쿠폰(월)','현금사은품','S머니연락처','대납여부'];
+  var h=['영업점코드','설치점코드','접수번호','가입계약번호','고객명','연락처','회선구분','상품명','약정','접수일','설치희망일','개통일','상태','설치비감액쿠폰','요금할인쿠폰(월)','현금사은품','S머니연락처','대납여부','아파트여부','원스톱(OSS)','기존통신사'];
   var rows=data.map(r=>[
     r.branchCode||'', r.installCode||'',
     r.receiptNo||'', r.contractNo||'', r.name, r.phone,
@@ -3253,7 +3253,9 @@ function exportExcel(){
     r.date, r.wishdate||'', r.openDate||'', r.status,
     (r.installCoupon&&r.installCoupon.checked)?(r.installCoupon.amt||''):'',
     (r.rateCoupon&&r.rateCoupon.checked)?(r.rateCoupon.amt||''):'',
-    r.gift||'', r.giftSmoneyPhone||'', r.giftDaenap?'대납':''
+    r.gift||'', r.giftSmoneyPhone||'', r.giftDaenap?'대납':'',
+    r.apt||'N',
+    r.onestop||'N', r.onestop==='Y'?(r.existingCarrier||''):''
   ]);
   var csv=[h].concat(rows).map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
