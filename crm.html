@@ -521,7 +521,7 @@ async function requireAuthAndInit(){
   }
 
   const { data: me, error } = await sb.from('users')
-    .select('id, name, role, status, branch_id, branches:branch_id(branch_name)')
+    .select('id, name, role, status, branch_id, branches:branch_id(branch_name, branch_code)')
     .eq('id', session.user.id)
     .single();
 
@@ -536,11 +536,17 @@ async function requireAuthAndInit(){
     name: me.name,
     role: me.role,
     branchId: me.branch_id,
-    branchName: me.branches ? me.branches.branch_name : null
+    branchName: me.branches ? me.branches.branch_name : null,
+    branchCode: me.branches ? me.branches.branch_code : null
   };
 
   document.getElementById('header-user-name').textContent = currentUser.name + ' (' + roleLabelKo(currentUser.role) + ')';
   document.getElementById('header-branch-name').textContent = currentUser.branchName || '전체 (본사)';
+  // 영업점 계정은 본인 소속 코드를 몰라도 되게, 로그인 즉시 영업점코드 자동 채움
+  if(currentUser.role==='branch' && currentUser.branchCode){
+    var bcEl = document.getElementById('f-branchcode');
+    if(bcEl && !bcEl.value) bcEl.value = currentUser.branchCode;
+  }
   if(['admin','staff'].includes(currentUser.role)){
     document.getElementById('goto-approve-btn').classList.remove('hidden');
     document.getElementById('goto-branch-btn').classList.remove('hidden');
@@ -1989,6 +1995,9 @@ function resetForm(){
   bIdx=0; Object.keys(bTypes).forEach(k=>delete bTypes[k]);
   addBlock();
   window._reregisterRecordId = null;
+  if(currentUser && currentUser.role==='branch' && currentUser.branchCode){
+    document.getElementById('f-branchcode').value = currentUser.branchCode;
+  }
   document.getElementById('header-title').innerHTML = '<span class="material-symbols-outlined text-primary">person_add</span><h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">고객접수 등록</h1>';
   document.getElementById('f-name').focus();
   showToast('초기화되었습니다.');
